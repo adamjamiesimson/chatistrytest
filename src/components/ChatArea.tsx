@@ -23,6 +23,7 @@ interface ChatAreaProps {
   onlineUserIds: string[];
   onBackToSidebar?: () => void;
   onLeftGroup?: () => void;
+  onMarkConversationRead?: (convId: string) => void;
 }
 
 const EMOJI_SET = ['❤️', '👍', '😂', '😭', '😮', '😢', '😡', '🔥', '👏'];
@@ -92,23 +93,6 @@ async function compressImage(file: File, maxDimension = 1200, quality = 0.82): P
     img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
     img.src = url;
   });
-}
-
-// ── #2 Notification sound via Web Audio API — no file needed ──
-function playNotificationSound() {
-  try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(1046, ctx.currentTime);           // C6
-    osc.frequency.exponentialRampToValueAtTime(1318, ctx.currentTime + 0.07); // E6
-    gain.gain.setValueAtTime(0.08, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
-    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.35);
-    setTimeout(() => ctx.close(), 500);
-  } catch { /* AudioContext blocked — silently ignore */ }
 }
 
 // ── #5 Reaction tooltip — format reactor names ──
@@ -196,7 +180,7 @@ function AudioPlayer({ url }: { url: string }) {
   );
 }
 
-export function ChatArea({ currentUser, conversation, onlineUserIds, onBackToSidebar, onLeftGroup }: ChatAreaProps) {
+export function ChatArea({ currentUser, conversation, onlineUserIds, onBackToSidebar, onLeftGroup, onMarkConversationRead }: ChatAreaProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [input, setInput] = useState('');
@@ -457,10 +441,7 @@ export function ChatArea({ currentUser, conversation, onlineUserIds, onBackToSid
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${chatId}` },
         ({ new: m }) => {
           setMessages(prev => prev.some(x => x.id === m.id) ? prev : [...prev, mapRow(m)]);
-          if (m.sender_id !== currentUser.id) {
-            playNotificationSound();
-            if (!isAtBottomRef.current) setNewMsgCount(prev => prev + 1);
-          }
+          if (m.sender_id !== currentUser.id && !isAtBottomRef.current) setNewMsgCount(prev => prev + 1);
         })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages', filter: `conversation_id=eq.${chatId}` },
         ({ new: m }) => setMessages(prev => prev.map(x => x.id === m.id ? mapRow(m) : x)))
@@ -625,6 +606,7 @@ export function ChatArea({ currentUser, conversation, onlineUserIds, onBackToSid
     // Reset the auto-grown textarea height back to a single line
     const ta = textareaRef.current;
     if (ta) { ta.style.height = `${LIST_LINE_HEIGHT_PX}px`; ta.style.overflowY = 'hidden'; }
+    if (chatId) onMarkConversationRead?.(chatId);
     try {
       await ensureConversation(chatId);
       await supabase.from('messages').insert({ id, conversation_id: chatId, sender_id: currentUser.id, content: text, message_type: 'text', created_at: optimistic.timestamp, ...replyPayload });
@@ -871,7 +853,9 @@ export function ChatArea({ currentUser, conversation, onlineUserIds, onBackToSid
       </AnimatePresence>
 
       {/* Messages */}
-      <div ref={scrollContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-6 relative">
+      <div ref={scrollContainerRef} onScroll={handleScroll}
+          onClick={() => { if (chatId) onMarkConversationRead?.(chatId); }}
+          className="flex-1 overflow-y-auto p-6 relative">
         {loading ? (
           <div className="flex justify-center py-8">
             <div className="w-6 h-6 border-2 border-[var(--border)] border-t-cyan-500 rounded-full animate-spin" />
@@ -1249,6 +1233,7 @@ export function ChatArea({ currentUser, conversation, onlineUserIds, onBackToSid
             <form onSubmit={handleSendText} className="flex-1 flex items-end gap-3">
               <div className="flex-1 flex items-end bg-[var(--input-bg)] border border-[var(--border)] rounded-2xl px-4 py-2.5 focus-within:border-cyan-700 transition-colors">
                 <textarea ref={textareaRef} value={input} onChange={handleInputChange} onPaste={handlePaste}
+                  onFocus={() => { if (chatId) onMarkConversationRead?.(chatId); }}
                   onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendText(e as any); } }}
                   placeholder="Type a message… or paste / attach media"
                   rows={1}
