@@ -844,10 +844,11 @@ export function ChatArea({ currentUser, conversation, onlineUserIds, onBackToSid
           </button>
         )}
         <button onClick={() => setShowWingman(o => !o)}
-          className={cn('w-8 h-8 rounded-lg border flex items-center justify-center transition-colors flex-shrink-0',
+          className={cn('h-8 rounded-lg border px-2.5 flex items-center gap-1.5 transition-colors flex-shrink-0',
             showWingman ? 'border-violet-500/70 bg-violet-600/20 text-violet-300' : 'border-[var(--border)] text-[var(--txt3)] hover:border-violet-500/60 hover:text-violet-300')}
           title="Ask Wingman AI">
           <Sparkles className="w-4 h-4" />
+          <span className="text-[11px] font-medium leading-none">Ask Wingman AI</span>
         </button>
         <button onClick={() => { setIsSearchOpen(o => !o); setSearchQuery(''); }}
           className={cn('w-8 h-8 rounded-lg border flex items-center justify-center transition-colors flex-shrink-0',
