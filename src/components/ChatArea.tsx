@@ -147,6 +147,29 @@ function AudioPlayer({ url }: { url: string }) {
     const d = audioRef.current?.duration;
     setDuration(Number.isFinite(d) && (d ?? 0) > 0 ? (d as number) : null);
   };
+
+  // Blob/WebM audio frequently reports duration as Infinity until the whole clip is
+  // decoded. Force the browser to resolve the real duration by seeking to a huge
+  // timestamp right after metadata loads, then jump back to the start. This makes the
+  // seek bar and blue progress fill available immediately instead of only after the
+  // message has been played through once.
+  useEffect(() => {
+    const a = audioRef.current;
+    if (!a) return;
+    const probeDuration = () => {
+      if (Number.isFinite(a.duration)) { grabDuration(); return; }
+      const reset = () => {
+        a.ontimeupdate = null;
+        a.currentTime = 0;
+        grabDuration();
+      };
+      a.ontimeupdate = reset;
+      try { a.currentTime = 1e10; } catch { reset(); }
+    };
+    a.addEventListener('loadedmetadata', probeDuration);
+    return () => a.removeEventListener('loadedmetadata', probeDuration);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const toggle = () => {
     const a = audioRef.current; if (!a) return;
     playing ? a.pause() : a.play(); setPlaying(!playing);
