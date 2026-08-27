@@ -69,11 +69,16 @@ Deno.serve(async (req) => {
     if (!conversationId) return jsonError(400, 'conversationId is required');
     if (!query.trim()) return jsonError(400, 'query is required');
 
-    const serviceClient = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SERVICE_ROLE_KEY')!,
-      { auth: { persistSession: false, autoRefreshToken: false } },
-    );
+    // Prefer the service-role key (bypasses RLS) if the platform injected it;
+    // otherwise fall back to the anon key. The RPCs are SECURITY DEFINER, so in
+    // either case the key pool reads happen with elevated privileges and raw
+    // Gemini keys never reach the browser.
+    const supabaseKey =
+      Deno.env.get('SERVICE_ROLE_KEY') ?? Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+    if (!supabaseKey) return jsonError(500, 'Edge function key not configured');
+    const serviceClient = createClient(Deno.env.get('SUPABASE_URL')!, supabaseKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
 
     // Identify the caller from the JWT.
     const authHeader = req.headers.get('Authorization') ?? '';
