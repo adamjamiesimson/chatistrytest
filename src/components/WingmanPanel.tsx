@@ -48,7 +48,19 @@ export function WingmanPanel({ conversationId, onClose }: WingmanPanelProps) {
         headers: { 'Content-Type': 'application/json' },
       });
       // data is the streamed text/plain response (SSE from Gemini passed through).
-      if (fnError) throw fnError;
+      if (fnError) {
+        // Surface the actual status code and any body so failures aren't masked.
+        const fnErr = fnError as { context?: { status?: number; data?: unknown }; message?: string };
+        const status = fnErr?.context?.status;
+        const body = fnErr?.context?.data;
+        let detail = '';
+        if (body && typeof body === 'object') {
+          detail = (body as { error?: string }).error ?? JSON.stringify(body);
+        } else if (body) {
+          detail = String(body);
+        }
+        throw new Error(`Wingman request failed${status ? ` (status ${status})` : ''}${detail ? `: ${detail}` : ''}`);
+      }
       if (data && typeof data === 'object' && (data as any).error) {
         setError((data as any).error);
         return;
