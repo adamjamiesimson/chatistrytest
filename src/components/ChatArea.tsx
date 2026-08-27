@@ -26,6 +26,8 @@ interface ChatAreaProps {
 }
 
 const EMOJI_SET = ['❤️', '👍', '😂', '😭', '😮', '😢', '😡', '🔥', '👏'];
+const MAX_TEXTAREA_LINES = 6; // textarea grows up to ~6 lines while typing
+const LIST_LINE_HEIGHT_PX = 20; // text-sm (14px) line-height in the textarea
 const MAX_IMAGE_SIZE = 8 * 1024 * 1024;
 const MAX_VIDEO_SIZE = 80 * 1024 * 1024;
 const ACCEPTED_IMAGE = ['image/jpeg','image/png','image/gif','image/webp'];
@@ -544,8 +546,18 @@ export function ChatArea({ currentUser, conversation, onlineUserIds, onBackToSid
   const typingLabel = useMemo(() => formatTypingLabel(Array.from(typingUserIds).map(nameFor)), [typingUserIds, nameFor]);
   useEffect(() => { if (isAtBottomRef.current) scrollToBottom(); }, [typingLabel]);
 
+  const autoResizeTextarea = useCallback(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    const maxHeight = LIST_LINE_HEIGHT_PX * MAX_TEXTAREA_LINES;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, maxHeight)}px`;
+    el.style.overflowY = el.scrollHeight > maxHeight ? 'auto' : 'hidden';
+  }, []);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
+    autoResizeTextarea();
     if (conversation && typingChannelRef.current)
       typingChannelRef.current.send({ type: 'broadcast', event: 'typing', payload: { userId: currentUser.id } });
   };
@@ -597,10 +609,29 @@ export function ChatArea({ currentUser, conversation, onlineUserIds, onBackToSid
   const handleSendText = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || !chatId) return;
-    const text = input.trim(); setInput(''); setReplyingTo(null);
-    await ensureConversation(chatId);
-    await supabase.from('messages').insert({ conversation_id: chatId, sender_id: currentUser.id, content: text, message_type: 'text', created_at: new Date().toISOString(), ...buildReplyPayload() });
-    await bumpConversation(chatId);
+    const text = input.trim();
+    const replyPayload = buildReplyPayload();
+    const id = crypto.randomUUID();
+    const optimistic: Message = {
+      id, senderId: currentUser.id, content: text,
+      timestamp: new Date().toISOString(), messageType: 'text', isEdited: false,
+      replyToId: replyPayload.reply_to_id, replyToContent: replyPayload.reply_to_content,
+      replyToSenderId: replyPayload.reply_to_sender_id, replyToMessageType: replyPayload.reply_to_message_type,
+    };
+    // Optimistically show the message immediately — no waiting for the realtime echo.
+    setMessages(prev => prev.some(x => x.id === id) ? prev : [...prev, optimistic]);
+    setInput(''); setReplyingTo(null);
+    setEmojiPickerFor(null);
+    // Reset the auto-grown textarea height back to a single line
+    const ta = textareaRef.current;
+    if (ta) { ta.style.height = `${LIST_LINE_HEIGHT_PX}px`; ta.style.overflowY = 'hidden'; }
+    try {
+      await ensureConversation(chatId);
+      await supabase.from('messages').insert({ conversation_id: chatId, sender_id: currentUser.id, content: text, message_type: 'text', created_at: optimistic.timestamp, ...replyPayload });
+      await bumpConversation(chatId);
+    } catch (err) {
+      console.error('Failed to send message:', err);
+    }
   };
 
   const handleSendMedia = async () => {
@@ -1220,7 +1251,10 @@ export function ChatArea({ currentUser, conversation, onlineUserIds, onBackToSid
                 <textarea ref={textareaRef} value={input} onChange={handleInputChange} onPaste={handlePaste}
                   onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendText(e as any); } }}
                   placeholder="Type a message… or paste / attach media"
-                  className="flex-1 bg-transparent outline-none text-sm placeholder-[var(--txt3)] text-[var(--txt)] resize-none max-h-32 min-h-[20px] block w-full" rows={1} />
+                  rows={1}
+                  style={{ height: `${LIST_LINE_HEIGHT_PX}px` }}
+                  onInput={autoResizeTextarea}
+                  className="flex-1 bg-transparent outline-none text-sm placeholder-[var(--txt3)] text-[var(--txt)] resize-none overflow-y-auto block w-full" />
               </div>
               <button type="submit" disabled={!input.trim()}
                 className="w-10 h-10 bg-cyan-600 hover:bg-cyan-500 rounded-full flex items-center justify-center text-black shadow-[0_0_15px_rgba(8,145,178,0.15)] disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0 transition-colors">
