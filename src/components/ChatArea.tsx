@@ -627,7 +627,7 @@ export function ChatArea({ currentUser, conversation, onlineUserIds, onBackToSid
     if (ta) { ta.style.height = `${LIST_LINE_HEIGHT_PX}px`; ta.style.overflowY = 'hidden'; }
     try {
       await ensureConversation(chatId);
-      await supabase.from('messages').insert({ conversation_id: chatId, sender_id: currentUser.id, content: text, message_type: 'text', created_at: optimistic.timestamp, ...replyPayload });
+      await supabase.from('messages').insert({ id, conversation_id: chatId, sender_id: currentUser.id, content: text, message_type: 'text', created_at: optimistic.timestamp, ...replyPayload });
       await bumpConversation(chatId);
     } catch (err) {
       console.error('Failed to send message:', err);
