@@ -3,7 +3,7 @@ import { User, Message, ReactionsMap, PinnedMessage, ConversationSummary, UserRo
 import {
   Send, MessageSquareDashed, Paperclip, X,
   Pencil, Trash2, Check, CheckCheck, ChevronDown, Play, CornerUpLeft, Smile,
-  Search, SearchX, Mic, Pin, PinOff, ArrowLeft, Forward, Info, Plus,
+  Search, SearchX, Mic, Pin, PinOff, ArrowLeft, Forward, Info, Plus, Sparkles,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../utils';
@@ -14,6 +14,7 @@ import { VoiceRecorder } from './VoiceRecorder';
 import { LinkPreview } from './LinkPreview';
 import { ForwardModal } from './ForwardModal';
 import { GroupInfoModal } from './GroupInfoModal';
+import { WingmanPanel } from './WingmanPanel';
 
 const PAGE_SIZE = 200;
 
@@ -289,6 +290,7 @@ export function ChatArea({ currentUser, conversation, onlineUserIds, onBackToSid
   const [liveCreatedBy, setLiveCreatedBy] = useState(conversation?.createdBy);
   const [groupMembers, setGroupMembers] = useState<User[]>([]);
   const [showGroupInfo, setShowGroupInfo] = useState(false);
+  const [showWingman, setShowWingman] = useState(false);
   const [typingUserIds, setTypingUserIds] = useState<Set<string>>(new Set());
   const typingTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
@@ -789,7 +791,7 @@ export function ChatArea({ currentUser, conversation, onlineUserIds, onBackToSid
   const firstTyper = firstTyperId ? memberMap.get(firstTyperId) : undefined;
 
   return (
-    <div className="flex-1 flex flex-col bg-[var(--bg)] max-h-screen text-[var(--txt)] min-w-0 overflow-x-hidden">
+    <div className="relative flex-1 flex flex-col bg-[var(--bg)] max-h-screen text-[var(--txt)] min-w-0 overflow-x-hidden">
 
       {/* Header */}
       <div className="h-16 border-b border-[var(--border)] bg-[var(--surface)] px-4 flex items-center gap-3 shrink-0">
@@ -841,6 +843,13 @@ export function ChatArea({ currentUser, conversation, onlineUserIds, onBackToSid
             <Info className="w-4 h-4" />
           </button>
         )}
+        <button onClick={() => setShowWingman(o => !o)}
+          className={cn('h-8 rounded-lg border px-2.5 flex items-center gap-1.5 transition-colors flex-shrink-0',
+            showWingman ? 'border-violet-500/70 bg-violet-600/20 text-violet-300' : 'border-[var(--border)] text-[var(--txt3)] hover:border-violet-500/60 hover:text-violet-300')}
+          title="Ask Wingman AI">
+          <Sparkles className="w-4 h-4" />
+          <span className="text-[11px] font-medium leading-none">Ask Wingman AI</span>
+        </button>
         <button onClick={() => { setIsSearchOpen(o => !o); setSearchQuery(''); }}
           className={cn('w-8 h-8 rounded-lg border flex items-center justify-center transition-colors flex-shrink-0',
             isSearchOpen ? 'border-cyan-700 bg-cyan-900/20 text-cyan-400' : 'border-[var(--border)] text-[var(--txt3)] hover:text-cyan-400 hover:border-cyan-800')}
@@ -848,6 +857,13 @@ export function ChatArea({ currentUser, conversation, onlineUserIds, onBackToSid
           {isSearchOpen ? <SearchX className="w-4 h-4" /> : <Search className="w-4 h-4" />}
         </button>
       </div>
+
+      {/* Wingman AI assistant */}
+      <AnimatePresence>
+        {showWingman && chatId && (
+          <WingmanPanel conversationId={chatId} onClose={() => setShowWingman(false)} />
+        )}
+      </AnimatePresence>
 
       {/* Search bar */}
       <AnimatePresence>
