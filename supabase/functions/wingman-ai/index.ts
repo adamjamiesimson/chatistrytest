@@ -22,7 +22,7 @@ const corsHeaders = {
 //   (SUPABASE_URL is auto-injected by the platform.)
 // ---------------------------------------------------------------------------
 
-const GEMINI_MODEL = Deno.env.get('GEMINI_MODEL') ?? 'gemini-2.0-flash';
+const GEMINI_MODEL = Deno.env.get('GEMINI_MODEL') ?? 'gemini-3.6-flash';
 const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta';
 
 function buildPrompt(
