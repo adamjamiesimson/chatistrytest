@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { motion } from 'motion/react';
 import { Search, X } from 'lucide-react';
+import { cn } from '../utils';
 
 const CATEGORIES = [
   {
@@ -185,9 +186,10 @@ const SEARCH_INDEX: { emoji: string; keywords: string }[] = [
 interface EmojiPickerProps {
   onSelect: (emoji: string) => void;
   onClose: () => void;
+  align?: 'left' | 'right';
 }
 
-export function EmojiPicker({ onSelect, onClose }: EmojiPickerProps) {
+export function EmojiPicker({ onSelect, onClose, align = 'left' }: EmojiPickerProps) {
   const ref = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
@@ -220,7 +222,8 @@ export function EmojiPicker({ onSelect, onClose }: EmojiPickerProps) {
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 10, scale: 0.95 }}
       transition={{ duration: 0.15 }}
-      className="absolute bottom-full mb-3 left-0 w-72 bg-[var(--surface3)] border border-[var(--border2)] rounded-2xl shadow-2xl overflow-hidden z-30"
+      className={cn('absolute bottom-full mb-3 w-72 bg-[var(--surface3)] border border-[var(--border2)] rounded-2xl shadow-2xl overflow-hidden z-30',
+        align === 'right' ? 'right-0' : 'left-0')}
     >
       {/* Search bar */}
       <div className="p-2.5 border-b border-[var(--border)]">

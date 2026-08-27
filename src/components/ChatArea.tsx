@@ -3,7 +3,7 @@ import { User, Message, ReactionsMap, PinnedMessage, ConversationSummary, UserRo
 import {
   Send, MessageSquareDashed, Paperclip, X,
   Pencil, Trash2, Check, CheckCheck, ChevronDown, Play, CornerUpLeft, Smile,
-  Search, SearchX, Mic, Pin, PinOff, ArrowLeft, Forward, Info,
+  Search, SearchX, Mic, Pin, PinOff, ArrowLeft, Forward, Info, Plus,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../utils';
@@ -25,7 +25,7 @@ interface ChatAreaProps {
   onLeftGroup?: () => void;
 }
 
-const EMOJI_SET = ['❤️', '👍', '😂', '😮', '😢', '😡', '🔥', '👏'];
+const EMOJI_SET = ['❤️', '👍', '😂', '😭', '😮', '😢', '😡', '🔥', '👏'];
 const MAX_IMAGE_SIZE = 8 * 1024 * 1024;
 const MAX_VIDEO_SIZE = 80 * 1024 * 1024;
 const ACCEPTED_IMAGE = ['image/jpeg','image/png','image/gif','image/webp'];
@@ -205,6 +205,9 @@ export function ChatArea({ currentUser, conversation, onlineUserIds, onBackToSid
   // Emoji picker
   const [emojiPickerFor, setEmojiPickerFor] = useState<string | null>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
+  // Full reaction emoji picker
+  const [reactionPickerFor, setReactionPickerFor] = useState<string | null>(null);
+  const reactionPickerRef = useRef<HTMLDivElement>(null);
 
   // Reply
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
@@ -347,6 +350,16 @@ export function ChatArea({ currentUser, conversation, onlineUserIds, onBackToSid
     document.addEventListener('mousedown', h);
     return () => document.removeEventListener('mousedown', h);
   }, [emojiPickerFor]);
+
+  useEffect(() => {
+    if (!reactionPickerFor) return;
+    const h = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (reactionPickerRef.current && !reactionPickerRef.current.contains(t)) setReactionPickerFor(null);
+    };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, [reactionPickerFor]);
 
   useEffect(() => {
     if (!conversation || !chatId) return;
@@ -636,6 +649,7 @@ export function ChatArea({ currentUser, conversation, onlineUserIds, onBackToSid
     const existing = reactions[msgId]?.[emoji] ?? [];
     const hasReacted = existing.includes(currentUser.id);
     setEmojiPickerFor(null);
+    setReactionPickerFor(null);
     if (hasReacted) { await supabase.from('message_reactions').delete().eq('message_id', msgId).eq('user_id', currentUser.id).eq('emoji', emoji); }
     else { await supabase.from('message_reactions').insert({ message_id: msgId, user_id: currentUser.id, emoji }); }
   };
@@ -1027,7 +1041,7 @@ export function ChatArea({ currentUser, conversation, onlineUserIds, onBackToSid
                     {/* Hover actions */}
                     {!isEditing && (
                       <div className={cn('flex items-center gap-1 self-center mb-1 transition-opacity relative',
-                        isHovered || emojiPickerFor === msg.id ? 'opacity-100' : 'opacity-0 pointer-events-none')}>
+                        isHovered || emojiPickerFor === msg.id || reactionPickerFor === msg.id ? 'opacity-100' : 'opacity-0 pointer-events-none')}>
                         {/* Emoji popover */}
                         {emojiPickerFor === msg.id && (
                           <div ref={emojiPickerRef}
@@ -1036,6 +1050,21 @@ export function ChatArea({ currentUser, conversation, onlineUserIds, onBackToSid
                               <button key={emoji} onClick={() => toggleReaction(msg.id, emoji)}
                                 className="w-8 h-8 text-lg flex items-center justify-center rounded-lg hover:bg-[var(--surface3)] transition-colors">{emoji}</button>
                             ))}
+                            <button onClick={() => { setEmojiPickerFor(null); setReactionPickerFor(msg.id); }}
+                              className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--txt3)] hover:bg-[var(--surface3)] hover:text-cyan-400 transition-colors"
+                              title="All emoji"
+                              aria-label="Show all emoji">
+                              <Plus className="w-4 h-4" />
+                            </button>
+                          </div>
+                        )}
+                        {/* Full emoji picker */}
+                        {reactionPickerFor === msg.id && (
+                          <div ref={reactionPickerRef}
+                            className={cn('absolute bottom-9 z-20', isMe ? 'right-0' : 'left-0')}>
+                            <EmojiPicker align={isMe ? 'right' : 'left'}
+                              onSelect={(emoji) => toggleReaction(msg.id, emoji)}
+                              onClose={() => setReactionPickerFor(null)} />
                           </div>
                         )}
                         {/* Forward */}
