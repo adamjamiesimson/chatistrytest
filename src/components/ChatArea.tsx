@@ -770,7 +770,7 @@ export function ChatArea({ currentUser, conversation, onlineUserIds, onBackToSid
   const firstTyper = firstTyperId ? memberMap.get(firstTyperId) : undefined;
 
   return (
-    <div className="flex-1 flex flex-col bg-[var(--bg)] max-h-screen text-[var(--txt)]">
+    <div className="flex-1 flex flex-col bg-[var(--bg)] max-h-screen text-[var(--txt)] min-w-0 overflow-x-hidden">
 
       {/* Header */}
       <div className="h-16 border-b border-[var(--border)] bg-[var(--surface)] px-4 flex items-center gap-3 shrink-0">
