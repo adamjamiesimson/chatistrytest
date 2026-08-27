@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { User, UserRow, UnreadCountRow, ConversationSummary } from './types';
 import { AuthScreen } from './components/AuthScreen';
 import { LandingPage } from './components/LandingPage';
@@ -234,7 +234,11 @@ export default function App() {
         if (!sender) return;
 
         const senderSnapshot = sender;
-        setUnreadCounts(prev => ({ ...prev, [convId]: (prev[convId] || 0) + 1 }));
+        // Don't bump the unread badge for the conversation the user is actively viewing.
+        setUnreadCounts(prev => {
+          if (convId === activeConversationRef.current?.id) return prev;
+          return { ...prev, [convId]: (prev[convId] || 0) + 1 };
+        });
 
         const senderLabel = senderSnapshot.displayName || `@${senderSnapshot.username}`;
         const groupName = meta.name || 'Group chat';
@@ -271,18 +275,24 @@ export default function App() {
     return () => supabase.removeChannel(channel);
   }, [user]);
 
+  // Mark a conversation as read (clears its unread dot) and refresh the source of
+  // truth for unread counts so the badge disappears in real time — no reload needed.
+  const markConversationRead = useCallback(async (convId: string) => {
+    setUnreadCounts(prev => ({ ...prev, [convId]: 0 }));
+    setNotifications(prev => prev.filter(n => n.conversationId !== convId));
+    if (!user) return;
+    await supabase.from('conversation_reads').upsert(
+      { user_id: user.id, conversation_id: convId, last_read_at: new Date().toISOString() },
+      { onConflict: 'user_id,conversation_id' }
+    );
+    await loadUnreadCounts(user.id);
+  }, [user, loadUnreadCounts]);
+
   const handleSelectConversation = async (conv: ConversationSummary) => {
     setActiveConversation(conv);
-    setUnreadCounts(prev => ({ ...prev, [conv.id]: 0 }));
     setNotifications(prev => prev.filter(n => n.conversationId !== conv.id));
     if (isMobile) setMobileSidebarOpen(false);
-    if (user) {
-      const { error } = await supabase.from('conversation_reads').upsert(
-        { user_id: user.id, conversation_id: conv.id, last_read_at: new Date().toISOString() },
-        { onConflict: 'user_id,conversation_id' }
-      );
-      if (error) console.warn('Failed to mark conversation as read:', error.message);
-    }
+    await markConversationRead(conv.id);
   };
 
   const handleOpenNotification = (item: NotificationItem) => {
@@ -372,6 +382,7 @@ export default function App() {
             onlineUserIds={onlineUserIds}
             onBackToSidebar={isMobile ? handleBackToSidebar : undefined}
             onLeftGroup={handleLeftGroup}
+            onMarkConversationRead={activeConversation ? (convId) => markConversationRead(convId) : undefined}
           />
         )}
         <Notifications
