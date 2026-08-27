@@ -95,23 +95,6 @@ async function compressImage(file: File, maxDimension = 1200, quality = 0.82): P
   });
 }
 
-// ── #2 Notification sound via Web Audio API — no file needed ──
-function playNotificationSound() {
-  try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(1046, ctx.currentTime);           // C6
-    osc.frequency.exponentialRampToValueAtTime(1318, ctx.currentTime + 0.07); // E6
-    gain.gain.setValueAtTime(0.08, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
-    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.35);
-    setTimeout(() => ctx.close(), 500);
-  } catch { /* AudioContext blocked — silently ignore */ }
-}
-
 // ── #5 Reaction tooltip — format reactor names ──
 function formatReactors(userIds: string[], getName: (id: string) => string): string {
   const names = userIds.map(getName);
@@ -458,10 +441,7 @@ export function ChatArea({ currentUser, conversation, onlineUserIds, onBackToSid
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${chatId}` },
         ({ new: m }) => {
           setMessages(prev => prev.some(x => x.id === m.id) ? prev : [...prev, mapRow(m)]);
-          if (m.sender_id !== currentUser.id) {
-            playNotificationSound();
-            if (!isAtBottomRef.current) setNewMsgCount(prev => prev + 1);
-          }
+          if (m.sender_id !== currentUser.id && !isAtBottomRef.current) setNewMsgCount(prev => prev + 1);
         })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages', filter: `conversation_id=eq.${chatId}` },
         ({ new: m }) => setMessages(prev => prev.map(x => x.id === m.id ? mapRow(m) : x)))

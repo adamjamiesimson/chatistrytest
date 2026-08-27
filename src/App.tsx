@@ -8,6 +8,7 @@ import { Notifications, NotificationItem } from './components/Notifications';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { supabase } from './supabase';
 import { useIsMobile } from './hooks/useIsMobile';
+import { playNotificationSound } from './utils';
 
 interface ConvMeta {
   isGroup: boolean;
@@ -274,6 +275,10 @@ export default function App() {
           if (convId === activeConversationRef.current?.id && windowFocusedRef.current) return prev;
           return { ...prev, [convId]: (prev[convId] || 0) + 1 };
         });
+
+        // Ring only for conversations the user isn't currently viewing — same rule
+        // as the red banner (which early-returns if it's the active conversation).
+        playNotificationSound();
 
         const senderLabel = senderSnapshot.displayName || `@${senderSnapshot.username}`;
         const groupName = meta.name || 'Group chat';
