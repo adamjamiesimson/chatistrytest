@@ -1,4 +1,16 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+// ---------------------------------------------------------------------------
+// Wingman AI — context-aware chat assistant (zero-dependency Edge Function).
+//
+// No external imports (no esm.sh) so it bundles reliably when pasted into the
+// Supabase Dashboard editor. All Supabase access is via plain fetch to the
+// REST API, authenticated with the JWT sent by the browser + the injected
+// SERVICE_ROLE_KEY (falls back to anon). Gemini keys live only here, never in
+// the browser.
+//
+// Rotation: on a "credits finished" error (HTTP 429 / RESOURCE_EXHAUSTED /
+// quota), the key is quarantined and the next key is tried automatically.
+// No hard token numbers.
+// ---------------------------------------------------------------------------
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -6,24 +18,10 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-// ---------------------------------------------------------------------------
-// Wingman AI — context-aware chat assistant.
-//
-// This Edge Function is the ONLY place Gemini API keys are used. It:
-//   1. Authenticates the caller and verifies they're a participant of the
-//      conversation, then pulls the last ~20 messages as context.
-//   2. Dispatches to Gemini using the key pool, rotating to the next key
-//      automatically whenever the current one reports that its credits are
-//      finished (HTTP 429 / RESOURCE_EXHAUSTED / quota). No hard token limits.
-//   3. Streams the model's reply back to the client.
-//
-// Requires these env vars (set in Supabase > Edge Functions > Secrets):
-//   SERVICE_ROLE_KEY — service-role key, NEVER in the client.
-//   (SUPABASE_URL is auto-injected by the platform.)
-// ---------------------------------------------------------------------------
-
 const GEMINI_MODEL = Deno.env.get('GEMINI_MODEL') ?? 'gemini-3.6-flash';
 const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta';
+const SB_URL = Deno.env.get('SUPABASE_URL') ?? '';
+const SB_KEY = Deno.env.get('SERVICE_ROLE_KEY') ?? Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 
 function buildPrompt(
   messages: { sender: string; me: boolean; content: string }[],
@@ -57,145 +55,6 @@ function isQuotaError(status: number, text: string): boolean {
   );
 }
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
-
-  try {
-    const body = await req.json();
-    const conversationId: string = body?.conversationId;
-    const query: string = body?.query ?? '';
-    if (!conversationId) return jsonError(400, 'conversationId is required');
-    if (!query.trim()) return jsonError(400, 'query is required');
-
-    // Prefer the service-role key (bypasses RLS) if the platform injected it;
-    // otherwise fall back to the anon key. The RPCs are SECURITY DEFINER, so in
-    // either case the key pool reads happen with elevated privileges and raw
-    // Gemini keys never reach the browser.
-    const supabaseKey =
-      Deno.env.get('SERVICE_ROLE_KEY') ?? Deno.env.get('SUPABASE_ANON_KEY') ?? '';
-    if (!supabaseKey) return jsonError(500, 'Edge function key not configured');
-    const serviceClient = createClient(Deno.env.get('SUPABASE_URL')!, supabaseKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-
-    // Identify the caller from the JWT.
-    const authHeader = req.headers.get('Authorization') ?? '';
-    const token = authHeader.replace(/^Bearer\s+/i, '');
-    if (!token) return jsonError(401, 'Not authenticated');
-    const { data: { user }, error: authErr } = await serviceClient.auth.getUser(token);
-    if (authErr || !user) return jsonError(401, 'Not authenticated');
-
-    // Authorization: caller must be a participant.
-    const { data: conv, error: convErr } = await serviceClient
-      .from('conversations')
-      .select('participants')
-      .eq('id', conversationId)
-      .maybeSingle();
-    if (convErr) return jsonError(500, 'Failed to load conversation');
-    const participants: string[] = conv?.participants ?? [];
-    if (!participants.includes(user.id)) {
-      return jsonError(403, 'Not a participant of this conversation');
-    }
-
-    // Context: last ~20 messages.
-    const { data: rows, error: msgErr } = await serviceClient
-      .from('messages')
-      .select('sender_id, content, message_type, created_at')
-      .eq('conversation_id', conversationId)
-      .order('created_at', { ascending: false })
-      .limit(20);
-    if (msgErr) return jsonError(500, 'Failed to load messages');
-
-    // Resolve sender display names.
-    const senderIds = Array.from(new Set((rows ?? []).map((r) => r.sender_id)));
-    const names: Record<string, string> = {};
-    if (senderIds.length) {
-      const { data: us } = await serviceClient
-        .from('users')
-        .select('id, username, display_name')
-        .in('id', senderIds);
-      for (const u of us ?? []) {
-        names[u.id as string] = (u.display_name as string) || `@${u.username}`;
-      }
-    }
-    const context = (rows ?? []).reverse().map((r) => ({
-      sender: names[r.sender_id as string] ?? 'Unknown',
-      me: r.sender_id === user.id,
-      content:
-        r.message_type === 'image'
-          ? '📷 [image]'
-          : r.message_type === 'audio'
-            ? '🎤 [voice message]'
-            : r.message_type === 'video'
-              ? '🎥 [video]'
-              : (r.content as string) ?? '',
-    }));
-
-    const prompt = buildPrompt(context, query);
-
-    // Rotate through the key pool on "credits finished" errors.
-    const seen = new Set<string>();
-    while (true) {
-      const { data: picked, error: pickErr } = await serviceClient.rpc('get_best_gemini_key');
-      if (pickErr || !picked || !picked.id) {
-        return jsonError(503, 'All Gemini API keys are currently unavailable. Try again later.');
-      }
-      const key = picked as { id: string; api_key: string };
-      if (seen.has(key.id)) {
-        return jsonError(503, 'All Gemini API keys are currently out of credit. Try again later.');
-      }
-      seen.add(key.id);
-
-      const geminiRes = await fetch(
-        `${GEMINI_ENDPOINT}/models/${GEMINI_MODEL}:generateContent?key=${key.api_key}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.4, maxOutputTokens: 2048 },
-          }),
-        },
-      );
-
-      const resText = await geminiRes.text().catch(() => '');
-
-      if (geminiRes.ok) {
-        try {
-          const parsed = JSON.parse(resText);
-          const text = (parsed?.candidates?.[0]?.content?.parts ?? [])
-            .map((p: { text?: string }) => p.text ?? '')
-            .join('');
-          if (!text) {
-            return jsonError(502, 'Gemini returned an empty response.');
-          }
-          await serviceClient.rpc('record_gemini_success', { p_key_id: key.id }).catch(() => {});
-          return jsonText(200, text);
-        } catch (parseErr) {
-          return jsonError(502, `Failed to parse Gemini response: ${parseErr instanceof Error ? parseErr.message : 'unknown'}`);
-        }
-      }
-
-      // Error path from Gemini.
-      const quotaError = isQuotaError(geminiRes.status, resText);
-      await serviceClient.rpc('mark_gemini_key_failed', {
-        p_key_id: key.id,
-        p_error: `HTTP ${geminiRes.status}: ${resText.slice(0, 200)}`,
-      }).catch(() => {});
-
-      if (!quotaError) {
-        return jsonError(geminiRes.status, `Wingman hit an error (HTTP ${geminiRes.status}). Try again.`);
-      }
-      // Quota / credits finished -> mark this key and loop to try the next one.
-    }
-  } catch (e) {
-    const message = e instanceof Error ? e.message : 'Unexpected error';
-    return jsonError(500, message);
-  }
-});
-
 function jsonError(status: number, message: string): Response {
   return new Response(JSON.stringify({ error: message }), {
     status,
@@ -209,3 +68,169 @@ function jsonText(status: number, text: string): Response {
     headers: { 'Content-Type': 'text/plain; charset=utf-8', ...corsHeaders },
   });
 }
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
+  if (!SB_URL || !SB_KEY) {
+    return jsonError(500, 'Edge function is not configured (missing URL/keys).');
+  }
+
+  const body = await req.json().catch(() => ({}));
+  const conversationId: string = body?.conversationId;
+  const query: string = body?.query ?? '';
+  if (!conversationId) return jsonError(400, 'conversationId is required');
+  if (!query.trim()) return jsonError(400, 'query is required');
+
+  const authHeader = req.headers.get('Authorization') ?? '';
+  const token = authHeader.replace(/^Bearer\s+/i, '');
+  if (!token) return jsonError(401, 'Not authenticated');
+
+  // ---- Identify the caller from the JWT via the Auth REST endpoint.
+  const meRes = await fetch(`${SB_URL}/auth/v1/user`, {
+    headers: {
+      apikey: SB_KEY,
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!meRes.ok) return jsonError(401, 'Not authenticated');
+  const me = (await meRes.json()) as { id: string; aud?: string };
+  if (!me?.id) return jsonError(401, 'Not authenticated');
+
+  // ---- Verify caller is a participant.
+  const convRes = await fetch(
+    `${SB_URL}/rest/v1/conversations?select=participants&id=eq.${encodeURIComponent(conversationId)}`,
+    {
+      headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` },
+    },
+  );
+  if (!convRes.ok) return jsonError(500, 'Failed to load conversation');
+  const convRows = (await convRes.json()) as { participants?: string[] }[];
+  const participants: string[] = convRows?.[0]?.participants ?? [];
+  if (!participants.includes(me.id)) {
+    return jsonError(403, 'Not a participant of this conversation');
+  }
+
+  // ---- Last ~20 messages.
+  const msgRes = await fetch(
+    `${SB_URL}/rest/v1/messages?select=sender_id,content,message_type,created_at&conversation_id=eq.${encodeURIComponent(conversationId)}&order=created_at.desc&limit=20`,
+    {
+      headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` },
+    },
+  );
+  if (!msgRes.ok) return jsonError(500, 'Failed to load messages');
+  const rows = (await msgRes.json()) as {
+    sender_id: string;
+    content: string | null;
+    message_type: string;
+    created_at: string;
+  }[];
+  rows.reverse();
+
+  // ---- Resolve sender names.
+  const senderIds = Array.from(new Set(rows.map((r) => r.sender_id)));
+  const names: Record<string, string> = {};
+  if (senderIds.length) {
+    const idsParam = senderIds.map((s) => `id=eq.${encodeURIComponent(s)}`).join('&');
+    const usRes = await fetch(`${SB_URL}/rest/v1/users?select=id,username,display_name&${idsParam}`, {
+      headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` },
+    });
+    if (usRes.ok) {
+      const us = (await usRes.json()) as { id: string; username: string; display_name: string | null }[];
+      for (const u of us) names[u.id] = u.display_name || `@${u.username}`;
+    }
+  }
+
+  const context = rows.map((r) => ({
+    sender: names[r.sender_id] ?? 'Unknown',
+    me: r.sender_id === me.id,
+    content:
+      r.message_type === 'image'
+        ? '📷 [image]'
+        : r.message_type === 'audio'
+          ? '🎤 [voice message]'
+          : r.message_type === 'video'
+            ? '🎥 [video]'
+            : r.content ?? '',
+  }));
+  const prompt = buildPrompt(context, query);
+
+  // ---- Rotate keys on "credits finished" errors.
+  const seen = new Set<string>();
+  while (true) {
+    const pickRes = await fetch(`${SB_URL}/rest/v1/rpc/get_best_gemini_key`, {
+      method: 'POST',
+      headers: {
+        apikey: SB_KEY,
+        Authorization: `Bearer ${SB_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=representation',
+      },
+      body: '{}',
+    });
+    if (!pickRes.ok || pickRes.status >= 400) {
+      return jsonError(503, 'All Gemini API keys are currently unavailable. Try again later.');
+    }
+    const picked = (await pickRes.json()) as { id?: string; api_key?: string } | null;
+    if (!picked?.id || !picked.api_key || seen.has(picked.id)) {
+      return jsonError(503, 'All Gemini API keys are currently out of credit. Try again later.');
+    }
+    seen.add(picked.id);
+
+    const geminiRes = await fetch(
+      `${GEMINI_ENDPOINT}/models/${GEMINI_MODEL}:generateContent?key=${picked.api_key}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.4, maxOutputTokens: 2048 },
+        }),
+      },
+    );
+    const resText = await geminiRes.text().catch(() => '');
+
+    if (geminiRes.ok) {
+      try {
+        const parsed = JSON.parse(resText);
+        const text = (parsed?.candidates?.[0]?.content?.parts ?? [])
+          .map((p: { text?: string }) => p.text ?? '')
+          .join('');
+        if (!text) return jsonError(502, 'Gemini returned an empty response.');
+        // Clear quarantine on success (best-effort).
+        await fetch(`${SB_URL}/rest/v1/rpc/record_gemini_success`, {
+          method: 'POST',
+          headers: {
+            apikey: SB_KEY,
+            Authorization: `Bearer ${SB_KEY}`,
+            'Content-Type': 'application/json',
+            Prefer: 'return=minimal',
+          },
+          body: JSON.stringify({ p_key_id: picked.id }),
+        }).catch(() => {});
+        return jsonText(200, text);
+      } catch (parseErr) {
+        return jsonError(502, `Failed to parse Gemini response: ${parseErr instanceof Error ? parseErr.message : 'unknown'}`);
+      }
+    }
+
+    const quotaError = isQuotaError(geminiRes.status, resText);
+    await fetch(`${SB_URL}/rest/v1/rpc/mark_gemini_key_failed`, {
+      method: 'POST',
+      headers: {
+        apikey: SB_KEY,
+        Authorization: `Bearer ${SB_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify({ p_key_id: picked.id, p_error: `HTTP ${geminiRes.status}: ${resText.slice(0, 200)}` }),
+    }).catch(() => {});
+
+    if (!quotaError) {
+      return jsonError(geminiRes.status, `Wingman hit an error (HTTP ${geminiRes.status}). Try again.`);
+    }
+    // Quota / credits finished -> loop to next key.
+  }
+});
