@@ -1,0 +1,6 @@
+# Supabase CLI config for local development of the Wingman AI Edge Function.
+# (The deployed project uses its own project config; this enables `supabase functions serve`.)
+project_id = "chatistry"
+
+[functions.wingman-ai]
+verify_jwt = true
