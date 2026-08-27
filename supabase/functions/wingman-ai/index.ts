@@ -43,15 +43,24 @@ function buildPrompt(
   ].join('\n');
 }
 
+// "Credits finished" / quota errors — only these should quarantine a key for a
+// long time and force rotation to the next key. Transient errors (5xx like the
+// 503 "high demand / UNAVAILABLE") must NOT be treated as credit exhaustion,
+// otherwise healthy keys get stuck in a 6-hour cooldown.
 function isQuotaError(status: number, text: string): boolean {
   const t = (text || '').toLowerCase();
+  // 429 with "quota"/"billing"/"resource_exhausted" = genuinely out of credit.
+  if (status === 429) {
+    return (
+      t.includes('quota') ||
+      t.includes('billing') ||
+      t.includes('resource_exhausted') ||
+      t.includes('rate limit')
+    );
+  }
   return (
-    status === 429 ||
     t.includes('resource_exhausted') ||
-    t.includes('quota') ||
-    t.includes('exhausted') ||
-    t.includes('billing') ||
-    t.includes('rate limit')
+    (t.includes('insufficient') && (t.includes('quota') || t.includes('billing')))
   );
 }
 
@@ -195,10 +204,23 @@ Deno.serve(async (req) => {
     if (geminiRes.ok) {
       try {
         const parsed = JSON.parse(resText);
-        const text = (parsed?.candidates?.[0]?.content?.parts ?? [])
+        const candidate = parsed?.candidates?.[0];
+        const finishReason = candidate?.finishReason ?? parsed?.promptFeedback?.blockReason ?? '';
+        const text = (candidate?.content?.parts ?? [])
           .map((p: { text?: string }) => p.text ?? '')
           .join('');
-        if (!text) return jsonError(502, 'Gemini returned an empty response.');
+        if (!text) {
+          const reason =
+            finishReason === 'SAFETY' || finishReason === 'PROHIBITED_CONTENT'
+              ? 'Gemini blocked the response for safety/policy reasons. Try rephrasing your request.'
+              : ['MAX_TOKENS', 'STOP'].includes(finishReason)
+                ? `Gemini stopped without text (${finishReason}). Try again or rephrase.`
+                : 'Gemini returned an empty response. Try again.';
+          return jsonError(502, reason);
+        }
+        if (finishReason === 'SAFETY' || finishReason === 'PROHIBITED_CONTENT') {
+          return jsonError(502, 'Gemini blocked part of the response for safety/policy reasons. Try rephrasing your request.');
+        }
         // Clear quarantine on success (best-effort).
         await fetch(`${SB_URL}/rest/v1/rpc/record_gemini_success`, {
           method: 'POST',
@@ -228,9 +250,16 @@ Deno.serve(async (req) => {
       body: JSON.stringify({ p_key_id: picked.id, p_error: `HTTP ${geminiRes.status}: ${resText.slice(0, 200)}` }),
     }).catch(() => {});
 
-    if (!quotaError) {
-      return jsonError(geminiRes.status, `Wingman hit an error (HTTP ${geminiRes.status}). Try again.`);
+    if (quotaError) {
+      // Credits finished -> quarantine this key and loop to the next one.
+      continue;
     }
-    // Quota / credits finished -> loop to next key.
+    if (geminiRes.status >= 500 && geminiRes.status < 600) {
+      // Transient server error (e.g. 503 high demand / 504) — don't fail the
+      // request; just mark a short cooldown and try the next key.
+      continue;
+    }
+    // Genuine non-transient error (4xx like invalid key/model) — surface it.
+    return jsonError(geminiRes.status, `Wingman hit an error (HTTP ${geminiRes.status}). Try again.`);
   }
 });
