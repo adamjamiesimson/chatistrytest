@@ -30,10 +30,26 @@ export default function App() {
   const isMobile = useIsMobile();
   const presenceChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const activeConversationRef = useRef<ConversationSummary | null>(null);
+  const windowFocusedRef = useRef<boolean>(typeof document !== 'undefined' ? document.hasFocus() : true);
   const userCacheRef = useRef<Map<string, User>>(new Map());
   const convCacheRef = useRef<Map<string, ConvMeta>>(new Map());
 
   useEffect(() => { activeConversationRef.current = activeConversation; }, [activeConversation]);
+
+  // Track window focus so messages arriving while the user is away bust the
+  // unread badge, and re-clearing it (via markConversationRead) as soon as they
+  // click back onto the chatistry tab.
+  useEffect(() => {
+    const onFocus = () => {
+      windowFocusedRef.current = true;
+      if (activeConversationRef.current && user) markConversationRead(activeConversationRef.current.id);
+    };
+    const onBlur = () => { windowFocusedRef.current = false; };
+    window.addEventListener('focus', onFocus);
+    window.addEventListener('blur', onBlur);
+    return () => { window.removeEventListener('focus', onFocus); window.removeEventListener('blur', onBlur); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   // Keep currentUser.avatarUrl reliably in sync.
   // Retries with backoff to handle the window where the auth session
@@ -234,9 +250,10 @@ export default function App() {
         if (!sender) return;
 
         const senderSnapshot = sender;
-        // Don't bump the unread badge for the conversation the user is actively viewing.
+        // Skip bumping for the active conversation while the window is focused.
+        // If the user is in another tab/app, still count it so the badge shows on their return.
         setUnreadCounts(prev => {
-          if (convId === activeConversationRef.current?.id) return prev;
+          if (convId === activeConversationRef.current?.id && windowFocusedRef.current) return prev;
           return { ...prev, [convId]: (prev[convId] || 0) + 1 };
         });
 
