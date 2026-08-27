@@ -149,7 +149,7 @@ Deno.serve(async (req) => {
       seen.add(key.id);
 
       const geminiRes = await fetch(
-        `${GEMINI_ENDPOINT}/models/${GEMINI_MODEL}:streamGenerateContent?alt=sse&key=${key.api_key}`,
+        `${GEMINI_ENDPOINT}/models/${GEMINI_MODEL}:generateContent?key=${key.api_key}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -160,23 +160,29 @@ Deno.serve(async (req) => {
         },
       );
 
+      const resText = await geminiRes.text().catch(() => '');
+
       if (geminiRes.ok) {
-        await serviceClient.rpc('record_gemini_success', { p_key_id: key.id }).catch(() => {});
-        return new Response(geminiRes.body, {
-          status: 200,
-          headers: {
-            'Content-Type': 'text/plain; charset=utf-8',
-            'Cache-Control': 'no-cache',
-            ...corsHeaders,
-          },
-        });
+        try {
+          const parsed = JSON.parse(resText);
+          const text = (parsed?.candidates?.[0]?.content?.parts ?? [])
+            .map((p: { text?: string }) => p.text ?? '')
+            .join('');
+          if (!text) {
+            return jsonError(502, 'Gemini returned an empty response.');
+          }
+          await serviceClient.rpc('record_gemini_success', { p_key_id: key.id }).catch(() => {});
+          return jsonText(200, text);
+        } catch (parseErr) {
+          return jsonError(502, `Failed to parse Gemini response: ${parseErr instanceof Error ? parseErr.message : 'unknown'}`);
+        }
       }
 
-      const errText = await geminiRes.text().catch(() => '');
-      const quotaError = isQuotaError(geminiRes.status, errText);
+      // Error path from Gemini.
+      const quotaError = isQuotaError(geminiRes.status, resText);
       await serviceClient.rpc('mark_gemini_key_failed', {
         p_key_id: key.id,
-        p_error: `HTTP ${geminiRes.status}: ${errText.slice(0, 200)}`,
+        p_error: `HTTP ${geminiRes.status}: ${resText.slice(0, 200)}`,
       }).catch(() => {});
 
       if (!quotaError) {
@@ -194,5 +200,12 @@ function jsonError(status: number, message: string): Response {
   return new Response(JSON.stringify({ error: message }), {
     status,
     headers: { 'Content-Type': 'application/json', ...corsHeaders },
+  });
+}
+
+function jsonText(status: number, text: string): Response {
+  return new Response(text, {
+    status,
+    headers: { 'Content-Type': 'text/plain; charset=utf-8', ...corsHeaders },
   });
 }
