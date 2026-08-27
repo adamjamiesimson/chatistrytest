@@ -65,33 +65,33 @@
     <div id="root">
       <!--
         SEO / no-JS fallback content.
-        This mirrors the real LandingPage.tsx copy exactly and is only
-        ever seen by crawlers that don't execute JavaScript (or for a
-        split second before React hydrates). React's createRoot().render()
-        replaces this div's children on mount, so real users never see it
-        as a separate flash of duplicate content.
+        Mirrors the real LandingPage.tsx copy exactly. Rendered inside <noscript>
+        so real users (who run JS) never see it flash, while crawlers / no-JS
+        clients still receive the SEO content before React mounts.
       -->
-      <main>
-        <h1>Messaging that feels instant.</h1>
-        <p>
-          CHATistry is a real-time chat app with voice messages, reactions,
-          media sharing, and end-to-end security. Free, open, yours.
-        </p>
+      <noscript>
+        <main>
+          <h1>Messaging that feels instant.</h1>
+          <p>
+            CHATistry is a real-time chat app with voice messages, reactions,
+            media sharing, and end-to-end security. Free, open, yours.
+          </p>
 
-        <h2>Everything you need</h2>
-        <p>Built for real conversations, not demo screenshots.</p>
-        <ul>
-          <li><strong>Real-time</strong> — Messages delivered instantly with live typing indicators and presence.</li>
-          <li><strong>Secure</strong> — End-to-end row-level security. Your conversations stay private.</li>
-          <li><strong>Rich media</strong> — Send images and videos with automatic compression built in.</li>
-          <li><strong>Voice messages</strong> — Record and send voice messages with a single tap.</li>
-          <li><strong>Reactions</strong> — React to any message with emoji. See who reacted on hover.</li>
-          <li><strong>Threads &amp; replies</strong> — Reply inline, pin important messages, and never lose context.</li>
-        </ul>
+          <h2>Everything you need</h2>
+          <p>Built for real conversations, not demo screenshots.</p>
+          <ul>
+            <li><strong>Real-time</strong> — Messages delivered instantly with live typing indicators and presence.</li>
+            <li><strong>Secure</strong> — End-to-end row-level security. Your conversations stay private.</li>
+            <li><strong>Rich media</strong> — Send images and videos with automatic compression built in.</li>
+            <li><strong>Voice messages</strong> — Record and send voice messages with a single tap.</li>
+            <li><strong>Reactions</strong> — React to any message with emoji. See who reacted on hover.</li>
+            <li><strong>Threads &amp; replies</strong> — Reply inline, pin important messages, and never lose context.</li>
+          </ul>
 
-        <h2>Ready to chat?</h2>
-        <p>Free forever. No ads. No tracking.</p>
-      </main>
+          <h2>Ready to chat?</h2>
+          <p>Free forever. No ads. No tracking.</p>
+        </main>
+      </noscript>
     </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

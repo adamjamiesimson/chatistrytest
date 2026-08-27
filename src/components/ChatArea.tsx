@@ -140,30 +140,67 @@ function formatTypingLabel(names: string[]): string | null {
 function AudioPlayer({ url }: { url: string }) {
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [duration, setDuration] = useState(0);
+  const [duration, setDuration] = useState<number | null>(null); // null = length not known yet
   const audioRef = useRef<HTMLAudioElement>(null);
 
+  const grabDuration = () => {
+    const d = audioRef.current?.duration;
+    setDuration(Number.isFinite(d) && (d ?? 0) > 0 ? (d as number) : null);
+  };
+
+  // Blob/WebM audio frequently reports duration as Infinity until the whole clip is
+  // decoded. Force the browser to resolve the real duration by seeking to a huge
+  // timestamp right after metadata loads, then jump back to the start. This makes the
+  // seek bar and blue progress fill available immediately instead of only after the
+  // message has been played through once.
+  useEffect(() => {
+    const a = audioRef.current;
+    if (!a) return;
+    const probeDuration = () => {
+      if (Number.isFinite(a.duration)) { grabDuration(); return; }
+      const reset = () => {
+        a.ontimeupdate = null;
+        a.currentTime = 0;
+        grabDuration();
+      };
+      a.ontimeupdate = reset;
+      try { a.currentTime = 1e10; } catch { reset(); }
+    };
+    a.addEventListener('loadedmetadata', probeDuration);
+    return () => a.removeEventListener('loadedmetadata', probeDuration);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const toggle = () => {
     const a = audioRef.current; if (!a) return;
     playing ? a.pause() : a.play(); setPlaying(!playing);
   };
   const handleTimeUpdate = () => {
     const a = audioRef.current; if (!a) return;
-    setProgress((a.currentTime / a.duration) * 100 || 0);
+    // Blob audio may report duration as Infinity until fully buffered, so guard it.
+    const d = Number.isFinite(a.duration) && a.duration > 0 ? a.duration : 0;
+    setProgress(d ? (a.currentTime / d) * 100 : 0);
   };
   const handleEnded = () => { setPlaying(false); setProgress(0); };
   const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
-    const a = audioRef.current; if (!a || !a.duration) return;
+    const a = audioRef.current; if (!a) return;
+    const d = Number.isFinite(a.duration) && a.duration > 0 ? a.duration : null;
+    if (d === null) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    a.currentTime = ((e.clientX - rect.left) / rect.width) * a.duration;
+    a.currentTime = ((e.clientX - rect.left) / rect.width) * d;
   };
-  const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+  const fmt = (s: number) => {
+    if (!Number.isFinite(s) || s < 0) s = 0;
+    return `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+  };
   const currentTime = audioRef.current?.currentTime ?? 0;
+  // Show the clip's length before it's been played (currentTime 0), otherwise the
+  // position it's paused at. Falls back to the current position if length is unknown.
+  const displayTime = !playing && currentTime === 0 ? (duration ?? currentTime) : currentTime;
 
   return (
     <div className="flex items-center gap-2 min-w-[190px] py-0.5">
       <audio ref={audioRef} src={url} onTimeUpdate={handleTimeUpdate}
-        onLoadedMetadata={() => setDuration(audioRef.current?.duration ?? 0)} onEnded={handleEnded} />
+        onLoadedMetadata={grabDuration} onDurationChange={grabDuration} onEnded={handleEnded} />
       <button onClick={toggle}
         className="w-7 h-7 rounded-full bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400 hover:bg-cyan-500/30 transition-colors flex-shrink-0">
         {playing
@@ -174,7 +211,7 @@ function AudioPlayer({ url }: { url: string }) {
         <div className="h-full bg-cyan-400 rounded-full transition-[width]" style={{ width: `${progress}%` }} />
       </div>
       <span className="text-[10px] text-[var(--txt3)] font-mono flex-shrink-0 w-8 text-right">
-        {playing ? fmt(currentTime) : fmt(duration)}
+        {fmt(displayTime)}
       </span>
     </div>
   );
