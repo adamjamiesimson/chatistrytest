@@ -36,18 +36,36 @@ export default function App() {
 
   useEffect(() => { activeConversationRef.current = activeConversation; }, [activeConversation]);
 
-  // Track window focus so messages arriving while the user is away bust the
-  // unread badge, and re-clearing it (via markConversationRead) as soon as they
-  // click back onto the chatistry tab.
+  // Track real visibility so messages arriving while the user is away bust the
+  // unread badge, and re-clear it (via markConversationRead) when they come back.
+  // `focus`/`blur` events are unreliable for "another overlapping window is in front"
+  // (they often only fire on minimize/tab-switch), so we ALSO poll document.hasFocus(),
+  // which returns the live focus state regardless of how it was lost. Combined with
+  // the Page Visibility API this catches minimize, tab switches, and covered windows.
   useEffect(() => {
-    const onFocus = () => {
-      windowFocusedRef.current = true;
-      if (activeConversationRef.current && user) markConversationRead(activeConversationRef.current.id);
+    const syncWindowState = () => {
+      const focused = document.hasFocus() && !document.hidden;
+      const wasFocused = windowFocusedRef.current;
+      windowFocusedRef.current = focused;
+      // Only act on the unfocused -> focused transition, so polling while un
+      // focused doesn't spam loads/upserts.
+      if (focused && !wasFocused && activeConversationRef.current && user) {
+        markConversationRead(activeConversationRef.current.id);
+      }
     };
-    const onBlur = () => { windowFocusedRef.current = false; };
-    window.addEventListener('focus', onFocus);
-    window.addEventListener('blur', onBlur);
-    return () => { window.removeEventListener('focus', onFocus); window.removeEventListener('blur', onBlur); };
+    syncWindowState();
+    window.addEventListener('focus', syncWindowState);
+    window.addEventListener('blur', syncWindowState);
+    document.addEventListener('visibilitychange', syncWindowState);
+    window.addEventListener('pageshow', syncWindowState);
+    const interval = setInterval(syncWindowState, 1000);
+    return () => {
+      window.removeEventListener('focus', syncWindowState);
+      window.removeEventListener('blur', syncWindowState);
+      document.removeEventListener('visibilitychange', syncWindowState);
+      window.removeEventListener('pageshow', syncWindowState);
+      clearInterval(interval);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
