@@ -193,7 +193,7 @@ export function Sidebar({
   const sidebarContent = (
     <div className={cn(
       'glass-panel flex flex-col h-full bg-[var(--surface2)]',
-      isMobile ? 'w-full rounded-none border-0' : 'w-[19rem] m-3 mr-0 rounded-[26px] shrink-0 overflow-hidden'
+      isMobile ? 'w-full rounded-none border-0' : 'w-[19rem] m-3 mr-0 rounded-[26px] shrink-0'
     )}>
       {/* Header */}
       <div className="p-5 border-b border-[var(--border)] flex items-center justify-between">
@@ -211,7 +211,7 @@ export function Sidebar({
             <button onClick={() => setShowAppearance(v => !v)}
               className={cn('p-2 transition-colors rounded-xl liquid-icon', showAppearance ? 'text-[var(--accent)] border-[var(--accent)]/40' : 'text-[var(--txt3)] hover:text-[var(--txt)]')}
               title={`Appearance: ${theme} mode`}><SlidersHorizontal className="w-4 h-4" /></button>
-            {showAppearance && <AppearanceMenu />}
+            {showAppearance && <AppearanceMenu variant="dialog" onClose={() => setShowAppearance(false)} />}
           </div>
           <button onClick={onLogout}
             className="p-2 text-[var(--txt3)] hover:text-[var(--txt)] transition-colors rounded-lg hover:bg-[var(--surface3)]"

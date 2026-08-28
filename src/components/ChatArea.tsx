@@ -1032,8 +1032,8 @@ export function ChatArea({ currentUser, conversation, onlineUserIds, onBackToSid
                         <div className={cn(
                           'relative px-4 py-2.5 text-sm leading-relaxed break-words max-w-full',
                           isMe
-                            ? 'bg-[var(--bubble-me-bg)] border border-[var(--bubble-me-border)] text-[var(--bubble-me-text)] rounded-tl-2xl rounded-bl-2xl rounded-br-2xl'
-                            : 'bg-[var(--bubble-them-bg)] border border-[var(--bubble-them-border)] text-[var(--txt)] rounded-tr-2xl rounded-br-2xl rounded-bl-2xl',
+                            ? 'bg-[var(--bubble-me-bg)] border border-[var(--bubble-me-border)] text-[var(--bubble-me-text)] rounded-tl-2xl rounded-bl-2xl rounded-br-2xl backdrop-blur-xl shadow-[inset_0_1px_rgba(255,255,255,.18),0_10px_24px_rgba(var(--accent-rgb),.08)]'
+                            : 'bg-[var(--bubble-them-bg)] border border-[var(--bubble-them-border)] text-[var(--txt)] rounded-tr-2xl rounded-br-2xl rounded-bl-2xl backdrop-blur-xl shadow-[inset_0_1px_rgba(255,255,255,.09),0_10px_24px_rgba(0,0,0,.08)]',
                           grouped && isMe && !msg.replyToId ? 'rounded-tr-md' : '',
                           grouped && !isMe && !msg.replyToId ? 'rounded-tl-md' : '',
                         )}>
