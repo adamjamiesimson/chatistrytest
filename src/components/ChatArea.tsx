@@ -765,22 +765,27 @@ export function ChatArea({ currentUser, conversation, onlineUserIds, onBackToSid
 
   if (!conversation || !chatId) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center bg-[var(--bg)] text-[var(--txt3)]">
+      <div className="chat-pane glass-panel relative flex-1 flex flex-col items-center justify-center bg-[var(--surface2)] max-h-[calc(100vh-1.5rem)] m-3 ml-3 rounded-[26px] overflow-hidden text-[var(--txt3)] min-w-0">
+        <div className="caustic-orb w-[29rem] h-[29rem] -right-40 -top-40 opacity-35 pointer-events-none" />
+        <div className="caustic-orb w-[22rem] h-[22rem] -left-32 -bottom-36 opacity-20 pointer-events-none" />
         {onBackToSidebar && (
           <button onClick={onBackToSidebar}
-            className="absolute top-5 left-5 flex items-center gap-2 text-sm text-[var(--txt2)] hover:text-[var(--txt)] transition-colors">
+            className="absolute top-5 left-5 z-10 flex items-center gap-2 text-sm text-[var(--txt2)] hover:text-[var(--txt)] transition-colors">
             <ArrowLeft className="w-4 h-4" /> Chats
           </button>
         )}
-        <MessageSquareDashed className="w-16 h-16 mb-4 opacity-30" />
-        <h2 className="text-xl font-medium text-[var(--txt)]">No chat selected</h2>
-        <p className="text-sm mt-2 text-center px-6">Search for a user, pick a recent chat, or start a group.</p>
-        {onBackToSidebar && (
-          <button onClick={onBackToSidebar}
-            className="mt-6 px-5 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-black text-sm font-medium transition-colors">
-            Open Chat List
-          </button>
-        )}
+        <div className="relative z-10 mx-6 max-w-sm text-center">
+          <div className="glass-panel-strong mx-auto grid w-20 h-20 place-items-center rounded-[28px] shadow-[0_18px_45px_rgba(0,0,0,.22)]">
+            <MessageSquareDashed className="w-9 h-9 text-[var(--accent)]" />
+          </div>
+          <p className="mt-7 text-[10px] font-bold uppercase tracking-[.2em] text-[var(--accent)]">Your space</p>
+          <h2 className="mt-3 text-2xl font-extrabold tracking-[-.045em] text-[var(--txt)]">Pick up a conversation.</h2>
+          <p className="mt-3 text-sm leading-6 text-[var(--txt2)]">Choose someone from your recent chats, search for a person, or make a new group when the conversation needs a room.</p>
+          <div className="mt-7 flex justify-center gap-2">
+            <span className="glass-panel rounded-full px-3 py-1.5 text-[11px] text-[var(--txt2)]">Private by default</span>
+            <span className="glass-panel rounded-full px-3 py-1.5 text-[11px] text-[var(--txt2)]">Made for people</span>
+          </div>
+        </div>
       </div>
     );
   }
