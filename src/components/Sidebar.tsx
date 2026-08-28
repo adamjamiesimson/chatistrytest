@@ -192,14 +192,15 @@ export function Sidebar({
 
   const sidebarContent = (
     <div className={cn(
-      'glass-panel flex flex-col h-full bg-[var(--surface2)]',
-      isMobile ? 'w-full rounded-none border-0' : 'w-[19rem] m-3 mr-0 rounded-[26px] shrink-0'
+      'glass-panel sidebar-panel flex flex-col h-full bg-[var(--surface2)] overflow-hidden',
+      isMobile ? 'w-full rounded-none border-0' : 'w-[22rem] m-0 rounded-[32px] shrink-0'
     )}>
       {/* Header */}
-      <div className="p-5 border-b border-[var(--border)] flex items-center justify-between">
+      <div className="relative p-6 border-b border-[var(--border)] flex items-center justify-between">
+        <div className="absolute -right-10 -top-14 h-40 w-40 rounded-full bg-[var(--accent)] opacity-[.12] blur-3xl pointer-events-none" />
         <div className="flex items-center gap-2">
           <img src="/logo.png" alt="CHATistry logo" className="w-8 h-8 object-contain" />
-          <div><h1 className="text-lg font-extrabold tracking-[-0.05em] text-[var(--txt)]">Chatistry</h1><p className="text-[9px] uppercase tracking-[0.18em] text-[var(--txt3)] mt-0.5">Private space</p></div>
+          <div><h1 className="text-xl font-extrabold tracking-[-0.065em] text-[var(--txt)]">Chatistry</h1><p className="text-[9px] uppercase tracking-[0.2em] text-[var(--accent)] mt-0.5">Your private space</p></div>
         </div>
         <div className="flex items-center gap-1">
           <button onClick={() => setShowNewGroup(true)}
@@ -230,21 +231,21 @@ export function Sidebar({
       </div>
 
       {/* Search */}
-      <div className="p-4 pb-3">
+      <div className="p-5 pb-4">
         <div className="relative group">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--txt3)] group-focus-within:text-cyan-600 transition-colors" />
           <input
             type="text" placeholder="Search chats or people..." value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="w-full bg-[var(--input-bg)] border border-[var(--border)] rounded-2xl py-2.5 pl-9 pr-4 text-sm focus:outline-none focus:border-cyan-600 transition-colors placeholder-[var(--txt3)] text-[var(--txt)]"
+            className="w-full bg-[var(--input-bg)] border border-[var(--border)] rounded-[18px] py-3 pl-10 pr-4 text-sm focus:outline-none focus:border-cyan-600 transition-colors placeholder-[var(--txt3)] text-[var(--txt)]"
           />
         </div>
       </div>
 
       {/* Chat list */}
       <div className="flex-1 overflow-y-auto">
-        <div className="px-2 space-y-0.5">
-          <h3 className="text-xs font-semibold text-[var(--txt3)] uppercase tracking-wider mb-2 px-2 mt-1">
+        <div className="px-3 space-y-1">
+          <h3 className="text-[10px] font-bold text-[var(--txt3)] uppercase tracking-[.16em] mb-3 px-2 mt-1">
             {searchQuery.trim() ? 'Your Chats' : 'Recent Chats'}
           </h3>
           {displayList.length === 0 ? (
@@ -270,10 +271,10 @@ export function Sidebar({
                   onMouseEnter={() => setHoveredConvoId(c.id)}
                   onMouseLeave={() => setHoveredConvoId(null)}
                   className={cn(
-                    'w-full flex items-center gap-3 p-3 text-left rounded-2xl transition-colors border border-transparent',
+                    'w-full flex items-center gap-3.5 p-3.5 text-left rounded-[20px] transition-all border border-transparent',
                     isActive
-                      ? 'bg-[var(--surface4)] border-[var(--border2)] shadow-[inset_0_1px_rgba(255,255,255,.08)]'
-                      : 'hover:bg-[var(--surface3)] text-[var(--txt2)] hover:text-[var(--txt)]'
+                      ? 'bg-[var(--surface4)] border-[var(--border2)] shadow-[inset_0_1px_rgba(255,255,255,.16),0_12px_28px_rgba(0,0,0,.12)]'
+                      : 'hover:bg-[var(--surface3)] hover:translate-x-0.5 text-[var(--txt2)] hover:text-[var(--txt)]'
                   )}
                 >
                   <div className="relative flex-shrink-0">
@@ -362,7 +363,7 @@ export function Sidebar({
       </div>
 
       {/* Footer */}
-      <div className="p-4 bg-[var(--surface)] border-t border-[var(--border)]">
+      <div className="p-5 bg-[var(--surface)] border-t border-[var(--border)]">
         <div className="flex items-center gap-3">
           <div className="relative group flex-shrink-0">
             <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />

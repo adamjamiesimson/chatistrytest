@@ -402,7 +402,7 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <div className="liquid-shell flex h-screen overflow-hidden font-sans text-[var(--txt)]">
+      <div className="liquid-shell flex h-screen gap-4 overflow-hidden p-4 font-sans text-[var(--txt)]">
         <Sidebar
           currentUser={user}
           activeConversation={activeConversation}

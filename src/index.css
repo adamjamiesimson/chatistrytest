@@ -4,10 +4,10 @@
 @theme { --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif; --font-mono: "DM Mono", ui-monospace, monospace; }
 
 :root {
-  --bg: #0c1018; --bg-deep: #070a10; --surface: rgba(23,30,45,.68); --surface2: rgba(20,27,41,.78); --surface3: rgba(35,44,62,.68); --surface4: rgba(47,58,79,.60); --inset: rgba(4,8,15,.26);
-  --border: rgba(214,231,255,.10); --border2: rgba(223,238,255,.16); --border3: rgba(231,242,255,.25); --txt: #f2f6ff; --txt2: #b0bdd1; --txt3: #75839b; --txt4: #4c5870; --input-bg: rgba(10,15,25,.50);
-  --bubble-me-bg: color-mix(in srgb, var(--accent) 16%, rgba(17,29,48,.86)); --bubble-me-border: color-mix(in srgb, var(--accent) 42%, transparent); --bubble-me-text: #f4fbff; --bubble-them-bg: rgba(34,43,60,.60); --bubble-them-border: rgba(232,243,255,.12);
-  --accent: #76ebe4; --accent-strong: #4cc5d6; --accent-rgb: 118,235,228; --shadow: 0 26px 70px rgba(0,0,0,.26), inset 0 1px 0 rgba(255,255,255,.10);
+  --bg: #070c14; --bg-deep: #02050a; --surface: rgba(24,35,54,.73); --surface2: rgba(17,27,45,.82); --surface3: rgba(49,65,93,.48); --surface4: rgba(94,116,150,.28); --inset: rgba(3,7,14,.42);
+  --border: rgba(219,235,255,.12); --border2: rgba(225,239,255,.22); --border3: rgba(231,242,255,.32); --txt: #f7faff; --txt2: #b9c7db; --txt3: #8293ad; --txt4: #50617a; --input-bg: rgba(5,10,20,.42);
+  --bubble-me-bg: color-mix(in srgb,var(--accent) 24%,rgb(15,35,53)); --bubble-me-border: color-mix(in srgb, var(--accent) 64%, transparent); --bubble-me-text: #f7fcff; --bubble-them-bg: rgba(59,75,103,.38); --bubble-them-border: rgba(233,243,255,.16);
+  --accent: #8ae9dc; --accent-strong: #48bfc4; --accent-rgb: 138,233,220; --shadow: 0 30px 86px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.14);
 }
 [data-theme="light"] { --bg: #edf2f7; --bg-deep: #dce5ef; --surface: rgba(255,255,255,.62); --surface2: rgba(255,255,255,.74); --surface3: rgba(239,245,251,.78); --surface4: rgba(227,236,246,.78); --inset: rgba(205,218,232,.38); --border: rgba(76,96,121,.12); --border2: rgba(76,96,121,.18); --border3: rgba(76,96,121,.28); --txt: #172238; --txt2: #4f6179; --txt3: #7989a1; --txt4: #9eacbd; --input-bg: rgba(255,255,255,.60); --bubble-me-bg: color-mix(in srgb, var(--accent) 20%, white); --bubble-me-border: color-mix(in srgb, var(--accent) 45%, transparent); --bubble-me-text: #193047; --bubble-them-bg: rgba(255,255,255,.72); --bubble-them-border: rgba(76,96,121,.13); --shadow: 0 22px 60px rgba(60,84,112,.14), inset 0 1px 0 rgba(255,255,255,.78); }
 [data-accent="iris"] { --accent: #beb1ff; --accent-strong: #8d83ee; --accent-rgb: 190,177,255; }
@@ -18,21 +18,28 @@
 * { -webkit-tap-highlight-color: transparent; }
 html, body, #root { min-height: 100%; }
 body { margin: 0; background: var(--bg); color: var(--txt); font-family: "Manrope", ui-sans-serif, system-ui, sans-serif; }
-body::before { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: -1; background: radial-gradient(52rem 36rem at -8% -15%, rgba(var(--accent-rgb),.18), transparent 60%), radial-gradient(42rem 34rem at 105% 105%, rgba(132,147,255,.13), transparent 62%), linear-gradient(135deg,var(--bg),var(--bg-deep)); }
+body::before { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: -1; background: radial-gradient(58rem 42rem at -12% -20%, rgba(var(--accent-rgb),.22), transparent 56%), radial-gradient(44rem 36rem at 108% -2%, rgba(128,154,255,.16), transparent 60%), radial-gradient(50rem 40rem at 62% 120%, rgba(109,118,232,.13), transparent 64%), linear-gradient(135deg,var(--bg),var(--bg-deep)); }
 button, input, textarea { font: inherit; }
 button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 ::selection { background: rgba(var(--accent-rgb),.30); color: var(--txt); }
 ::-webkit-scrollbar { width: 7px; height: 7px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border3); border-radius: 99px; }
 
-.liquid-shell { position: relative; isolation: isolate; background: radial-gradient(45rem 24rem at 6% 0%,rgba(var(--accent-rgb),.11),transparent 70%),var(--bg); }
-.glass-panel { background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow); backdrop-filter: blur(24px) saturate(130%); -webkit-backdrop-filter: blur(24px) saturate(130%); }
-.glass-panel-strong { background: var(--surface2); border: 1px solid var(--border2); box-shadow: var(--shadow); backdrop-filter: blur(30px) saturate(130%); -webkit-backdrop-filter: blur(30px) saturate(130%); }
+.liquid-shell { position: relative; isolation: isolate; background: radial-gradient(46rem 34rem at 4% 2%,rgba(var(--accent-rgb),.12),transparent 68%),var(--bg); }
+.glass-panel { position:relative; background: linear-gradient(145deg,rgba(47,63,91,.74),var(--surface)); border: 1px solid var(--border); box-shadow: var(--shadow); backdrop-filter: blur(28px) saturate(145%); -webkit-backdrop-filter: blur(28px) saturate(145%); }
+.glass-panel::before { content:""; position:absolute; inset:0; pointer-events:none; border-radius:inherit; background:linear-gradient(120deg,rgba(255,255,255,.13),transparent 24%,transparent 72%,rgba(var(--accent-rgb),.08)); opacity:.72; }
+.glass-panel-strong { position:relative; background: linear-gradient(145deg,rgba(65,82,112,.70),var(--surface2)); border: 1px solid var(--border2); box-shadow: var(--shadow); backdrop-filter: blur(34px) saturate(145%); -webkit-backdrop-filter: blur(34px) saturate(145%); }
 .liquid-button { background: linear-gradient(135deg,color-mix(in srgb,var(--accent) 92%,white),var(--accent-strong)); color: #092027; border: 1px solid rgba(255,255,255,.40); box-shadow: 0 11px 26px rgba(var(--accent-rgb),.22), inset 0 1px 1px rgba(255,255,255,.7); transition: transform .2s ease,box-shadow .2s ease,filter .2s ease; }
 .liquid-button:hover { transform: translateY(-1px); filter: saturate(1.1) brightness(1.04); box-shadow: 0 15px 32px rgba(var(--accent-rgb),.30), inset 0 1px 1px rgba(255,255,255,.7); }
 .liquid-icon { border: 1px solid var(--border); background: var(--surface3); box-shadow: inset 0 1px 0 rgba(255,255,255,.08); }
 .appearance-menu { background: color-mix(in srgb,var(--surface2) 90%,transparent); border: 1px solid var(--border2); border-radius: 20px; box-shadow: 0 22px 60px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.14); backdrop-filter: blur(28px) saturate(150%); -webkit-backdrop-filter: blur(28px) saturate(150%); }
 .appearance-selected { background: color-mix(in srgb,var(--accent) 15%,var(--surface4)); color: var(--txt); box-shadow: inset 0 1px 0 rgba(255,255,255,.13); }
 .caustic-orb { position:absolute; border-radius:45% 55% 55% 45% / 52% 43% 57% 48%; background:radial-gradient(circle at 28% 23%,rgba(255,255,255,.76) 0 3%,rgba(var(--accent-rgb),.42) 19%,rgba(var(--accent-rgb),.08) 46%,transparent 68%); filter:blur(.2px); box-shadow:inset 17px 17px 38px rgba(255,255,255,.16),inset -18px -18px 40px rgba(0,0,0,.13),0 28px 80px rgba(var(--accent-rgb),.18); opacity:.9; }
+.sidebar-panel::after { content:""; position:absolute; inset:auto 1.4rem 0; height:1px; background:linear-gradient(90deg,transparent,rgba(var(--accent-rgb),.65),transparent); opacity:.8; }
+.chat-pane { box-shadow:0 34px 96px rgba(0,0,0,.35),inset 0 1px rgba(255,255,255,.12); }
+.chat-pane::after { content:""; position:absolute; z-index:0; width:34rem; height:22rem; right:-13rem; top:4rem; pointer-events:none; background:radial-gradient(ellipse,rgba(var(--accent-rgb),.10),transparent 66%); filter:blur(18px); }
+.chat-pane > * { position:relative; z-index:1; }
+.chat-scroll { background:linear-gradient(180deg,rgba(9,15,27,.12),rgba(4,8,15,.18)); }
+.composer-shell { box-shadow:inset 0 1px rgba(255,255,255,.07),0 8px 22px rgba(0,0,0,.12); }
 
 /* Accent utilities are deliberately mapped to the saved appearance selection. */
 .text-cyan-400 { color: var(--accent) !important; } .text-cyan-300 { color: color-mix(in srgb,var(--accent) 78%,white) !important; } .bg-cyan-500,.bg-cyan-600 { background-color:var(--accent-strong) !important; } .hover\:bg-cyan-500:hover,.hover\:bg-cyan-400:hover { background-color:var(--accent) !important; }

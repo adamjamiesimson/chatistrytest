@@ -765,7 +765,7 @@ export function ChatArea({ currentUser, conversation, onlineUserIds, onBackToSid
 
   if (!conversation || !chatId) {
     return (
-      <div className="chat-pane glass-panel relative flex-1 flex flex-col items-center justify-center bg-[var(--surface2)] max-h-[calc(100vh-1.5rem)] m-3 ml-3 rounded-[26px] overflow-hidden text-[var(--txt3)] min-w-0">
+      <div className="chat-pane glass-panel relative flex-1 flex flex-col items-center justify-center bg-[var(--surface2)] max-h-full m-0 rounded-[32px] overflow-hidden text-[var(--txt3)] min-w-0">
         <div className="caustic-orb w-[29rem] h-[29rem] -right-40 -top-40 opacity-35 pointer-events-none" />
         <div className="caustic-orb w-[22rem] h-[22rem] -left-32 -bottom-36 opacity-20 pointer-events-none" />
         {onBackToSidebar && (
@@ -796,10 +796,10 @@ export function ChatArea({ currentUser, conversation, onlineUserIds, onBackToSid
   const firstTyper = firstTyperId ? memberMap.get(firstTyperId) : undefined;
 
   return (
-    <div className="chat-pane glass-panel relative flex-1 flex flex-col bg-[var(--surface2)] max-h-[calc(100vh-1.5rem)] m-3 ml-3 rounded-[26px] overflow-hidden text-[var(--txt)] min-w-0 overflow-x-hidden">
+    <div className="chat-pane glass-panel relative flex-1 flex flex-col bg-[var(--surface2)] max-h-full m-0 rounded-[32px] overflow-hidden text-[var(--txt)] min-w-0 overflow-x-hidden">
 
       {/* Header */}
-      <div className="h-[4.5rem] border-b border-[var(--border)] bg-[var(--surface)] px-5 flex items-center gap-3 shrink-0 backdrop-blur-xl">
+      <div className="h-20 border-b border-[var(--border)] bg-[var(--surface)] px-7 flex items-center gap-4 shrink-0 backdrop-blur-xl">
         {/* Back button — mobile only */}
         {onBackToSidebar && (
           <button onClick={onBackToSidebar}
@@ -913,7 +913,7 @@ export function ChatArea({ currentUser, conversation, onlineUserIds, onBackToSid
       {/* Messages */}
       <div ref={scrollContainerRef} onScroll={handleScroll}
           onClick={() => { if (chatId) onMarkConversationRead?.(chatId); }}
-          className="flex-1 overflow-y-auto p-5 md:p-7 relative">
+          className="chat-scroll flex-1 overflow-y-auto p-6 md:p-9 relative">
         {loading ? (
           <div className="flex justify-center py-8">
             <div className="w-6 h-6 border-2 border-[var(--border)] border-t-cyan-500 rounded-full animate-spin" />
@@ -1006,7 +1006,7 @@ export function ChatArea({ currentUser, conversation, onlineUserIds, onBackToSid
                     </div>
 
                     {/* Bubble column */}
-                    <div className={cn('flex flex-col max-w-[55%]', isMe ? 'items-end' : 'items-start')}>
+                    <div className={cn('flex flex-col max-w-[52%]', isMe ? 'items-end' : 'items-start')}>
                       {/* Quoted bubble */}
                       {msg.replyToId && (
                         <div className={cn('px-3 py-2 rounded-xl text-xs mb-1 max-w-full border cursor-default select-none',
@@ -1256,7 +1256,7 @@ export function ChatArea({ currentUser, conversation, onlineUserIds, onBackToSid
       </AnimatePresence>
 
       {/* Footer */}
-      <footer className="p-3 md:p-5 bg-[var(--surface)] border-t border-[var(--border)] shrink-0 backdrop-blur-xl">
+      <footer className="p-4 md:p-5 bg-[var(--surface)] border-t border-[var(--border)] shrink-0 backdrop-blur-xl">
         <input ref={fileInputRef} type="file"
           accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/ogg,video/quicktime,video/x-msvideo"
           className="hidden" onChange={handleFileSelect} />
@@ -1289,7 +1289,7 @@ export function ChatArea({ currentUser, conversation, onlineUserIds, onBackToSid
             </button>
           ) : (
             <form onSubmit={handleSendText} className="flex-1 flex items-end gap-3">
-              <div className="flex-1 flex items-end bg-[var(--input-bg)] border border-[var(--border)] rounded-2xl px-4 py-2.5 focus-within:border-cyan-700 transition-colors">
+              <div className="composer-shell flex-1 flex items-end bg-[var(--input-bg)] border border-[var(--border)] rounded-[22px] px-5 py-3 focus-within:border-cyan-700 transition-colors">
                 <textarea ref={textareaRef} value={input} onChange={handleInputChange} onPaste={handlePaste}
                   onFocus={() => { if (chatId) onMarkConversationRead?.(chatId); }}
                   onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendText(e as any); } }}
