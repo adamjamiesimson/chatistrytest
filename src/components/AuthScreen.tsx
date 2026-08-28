@@ -94,7 +94,7 @@ export function AuthScreen({ initialMode = 'signin', onBack }: { initialMode?: '
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg)] flex items-center justify-center p-4 overflow-hidden relative">
+    <div className="liquid-shell min-h-screen flex items-center justify-center p-4 overflow-hidden relative">
       {onBack && (
         <button onClick={onBack}
           className="absolute top-5 left-5 flex items-center gap-1.5 text-sm text-[var(--txt3)] hover:text-[var(--txt2)] transition-colors z-10">
@@ -105,22 +105,19 @@ export function AuthScreen({ initialMode = 'signin', onBack }: { initialMode?: '
         </button>
       )}
 
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="auth-orb-1" /><div className="auth-orb-2" /><div className="auth-orb-3" />
-      </div>
-      <div className="auth-dots absolute inset-0 pointer-events-none" />
+      <div className="caustic-orb w-[34rem] h-[34rem] -right-40 -top-28 pointer-events-none" />
+      <div className="caustic-orb w-[26rem] h-[26rem] -left-24 -bottom-28 opacity-45 pointer-events-none" />
 
       <motion.div
         initial={{ opacity: 0, y: 28, scale: 0.96 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-        className="auth-card relative w-full max-w-[400px] p-8"
+        className="glass-panel-strong relative w-full max-w-[410px] p-8 rounded-[28px]"
       >
         {/* Logo */}
         <div className="flex flex-col items-center mb-7">
           <div className="relative mb-4">
-            <div className="absolute inset-0 rounded-2xl bg-cyan-500/15 blur-2xl scale-150" />
-            <div className="absolute inset-0 rounded-2xl bg-orange-500/10 blur-xl scale-125" />
+            <div className="absolute inset-0 rounded-2xl bg-[var(--accent)]/20 blur-2xl scale-150" />
             <img src="/logo.png" alt="CHATistry" className="relative w-20 h-20 object-contain drop-shadow-2xl" />
           </div>
           <h1 className="text-2xl font-semibold tracking-tight text-cyan-400 mb-1">CHATistry</h1>

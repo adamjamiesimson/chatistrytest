@@ -791,10 +791,10 @@ export function ChatArea({ currentUser, conversation, onlineUserIds, onBackToSid
   const firstTyper = firstTyperId ? memberMap.get(firstTyperId) : undefined;
 
   return (
-    <div className="relative flex-1 flex flex-col bg-[var(--bg)] max-h-screen text-[var(--txt)] min-w-0 overflow-x-hidden">
+    <div className="chat-pane glass-panel relative flex-1 flex flex-col bg-[var(--surface2)] max-h-[calc(100vh-1.5rem)] m-3 ml-3 rounded-[26px] overflow-hidden text-[var(--txt)] min-w-0 overflow-x-hidden">
 
       {/* Header */}
-      <div className="h-16 border-b border-[var(--border)] bg-[var(--surface)] px-4 flex items-center gap-3 shrink-0">
+      <div className="h-[4.5rem] border-b border-[var(--border)] bg-[var(--surface)] px-5 flex items-center gap-3 shrink-0 backdrop-blur-xl">
         {/* Back button — mobile only */}
         {onBackToSidebar && (
           <button onClick={onBackToSidebar}
@@ -908,7 +908,7 @@ export function ChatArea({ currentUser, conversation, onlineUserIds, onBackToSid
       {/* Messages */}
       <div ref={scrollContainerRef} onScroll={handleScroll}
           onClick={() => { if (chatId) onMarkConversationRead?.(chatId); }}
-          className="flex-1 overflow-y-auto p-6 relative">
+          className="flex-1 overflow-y-auto p-5 md:p-7 relative">
         {loading ? (
           <div className="flex justify-center py-8">
             <div className="w-6 h-6 border-2 border-[var(--border)] border-t-cyan-500 rounded-full animate-spin" />
@@ -1251,7 +1251,7 @@ export function ChatArea({ currentUser, conversation, onlineUserIds, onBackToSid
       </AnimatePresence>
 
       {/* Footer */}
-      <footer className="p-3 md:p-5 bg-[var(--surface)] border-t border-[var(--border)] shrink-0">
+      <footer className="p-3 md:p-5 bg-[var(--surface)] border-t border-[var(--border)] shrink-0 backdrop-blur-xl">
         <input ref={fileInputRef} type="file"
           accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/ogg,video/quicktime,video/x-msvideo"
           className="hidden" onChange={handleFileSelect} />

@@ -238,6 +238,36 @@ ALTER TABLE public.users ADD COLUMN IF NOT EXISTS display_name text;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS status_emoji text NOT NULL DEFAULT '';
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS status_text  text NOT NULL DEFAULT '';
 
+-- ================================================================
+-- MIGRATION: private per-user appearance preferences
+-- Run this section in Supabase SQL Editor before deploying the liquid-glass UI.
+-- ================================================================
+
+CREATE TABLE IF NOT EXISTS public.user_preferences (
+  user_id uuid PRIMARY KEY REFERENCES public.users(id) ON DELETE CASCADE,
+  theme text NOT NULL DEFAULT 'dark' CHECK (theme IN ('dark', 'light')),
+  accent text NOT NULL DEFAULT 'aqua' CHECK (accent IN ('aqua', 'iris', 'rose', 'amber', 'sage')),
+  updated_at timestamptz NOT NULL DEFAULT timezone('utc', now())
+);
+
+ALTER TABLE public.user_preferences ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own preferences" ON public.user_preferences;
+CREATE POLICY "Users can view own preferences"
+  ON public.user_preferences FOR SELECT
+  USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can create own preferences" ON public.user_preferences;
+CREATE POLICY "Users can create own preferences"
+  ON public.user_preferences FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can update own preferences" ON public.user_preferences;
+CREATE POLICY "Users can update own preferences"
+  ON public.user_preferences FOR UPDATE
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
 -- Rate limiting: max 30 messages per user per minute
 CREATE OR REPLACE FUNCTION enforce_rate_limit()
 RETURNS TRIGGER AS $$

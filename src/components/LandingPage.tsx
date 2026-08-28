@@ -1,146 +1,29 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { MessageSquare, Zap, Shield, Smile, Image, Mic } from 'lucide-react';
+import { ArrowRight, Image, LockKeyhole, MessageCircleMore, Mic, SlidersHorizontal, UsersRound, Zap } from 'lucide-react';
+import { AppearanceMenu } from './AppearanceMenu';
 
-interface LandingPageProps {
-  onSignIn: () => void;
-  onSignUp: () => void;
-}
-
-const FEATURES = [
-  { icon: Zap,          title: 'Real-time',       desc: 'Messages delivered instantly with live typing indicators and presence.' },
-  { icon: Shield,       title: 'Secure',          desc: 'End-to-end row-level security. Your conversations stay private.' },
-  { icon: Image,        title: 'Rich media',       desc: 'Send images and videos with automatic compression built in.' },
-  { icon: Mic,          title: 'Voice messages',   desc: 'Record and send voice messages with a single tap.' },
-  { icon: Smile,        title: 'Reactions',        desc: 'React to any message with emoji. See who reacted on hover.' },
-  { icon: MessageSquare,title: 'Threads & replies', desc: 'Reply inline, pin important messages, and never lose context.' },
+interface LandingPageProps { onSignIn: () => void; onSignUp: () => void; }
+const features = [
+  { icon: Zap, title: 'In the moment', copy: 'Live messages, presence, and typing that keep a conversation feeling alive.' },
+  { icon: LockKeyhole, title: 'Built with care', copy: 'Access is protected with Supabase row-level security from the start.' },
+  { icon: Image, title: 'More than text', copy: 'Share images, video, links, voice notes, and the small details too.' },
+  { icon: UsersRound, title: 'Your people', copy: 'Move between direct messages and groups without losing the thread.' },
+  { icon: MessageCircleMore, title: 'Keep context', copy: 'Reply, react, pin, edit, and forward when the moment calls for it.' },
+  { icon: Mic, title: 'Use your voice', copy: 'Record a note when a sentence is not enough.' },
 ];
 
 export function LandingPage({ onSignIn, onSignUp }: LandingPageProps) {
-  return (
-    <div className="min-h-screen bg-[var(--bg)] text-[var(--txt)] overflow-x-hidden">
-
-      {/* Nav */}
-      <nav className="fixed top-0 inset-x-0 z-50 border-b border-[var(--border)] bg-[var(--bg)]/80 backdrop-blur-xl">
-        <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <img src="/logo.png" alt="CHATistry" className="w-8 h-8 object-contain" />
-            <span className="text-lg font-bold tracking-tight text-cyan-400">CHATistry</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <button onClick={onSignIn}
-              className="px-4 py-2 text-sm font-medium text-[var(--txt2)] hover:text-[var(--txt)] transition-colors">
-              Sign In
-            </button>
-            <button onClick={onSignUp}
-              className="px-4 py-2 text-sm font-semibold rounded-xl bg-cyan-600 hover:bg-cyan-500 text-black transition-colors shadow-[0_0_20px_rgba(6,182,212,0.2)]">
-              Get Started
-            </button>
-          </div>
-        </div>
-      </nav>
-
-      {/* Hero */}
-      <section className="relative pt-40 pb-28 px-6 flex flex-col items-center text-center overflow-hidden">
-        {/* Background orbs */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute top-[-10%] left-[10%] w-[500px] h-[500px] rounded-full bg-cyan-500/8 blur-[100px]" />
-          <div className="absolute top-[20%] right-[5%]  w-[400px] h-[400px] rounded-full bg-orange-500/6 blur-[100px]" />
-          <div className="absolute bottom-0  left-[30%] w-[350px] h-[350px] rounded-full bg-violet-500/5 blur-[100px]" />
-          {/* Dot grid */}
-          <div className="absolute inset-0 opacity-100"
-            style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,0.055) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
-        </div>
-
-        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-          className="relative">
-          {/* Logo glow */}
-          <div className="flex justify-center mb-8">
-            <div className="relative">
-              <div className="absolute inset-0 rounded-3xl bg-cyan-500/20 blur-2xl scale-150" />
-              <div className="absolute inset-0 rounded-3xl bg-orange-500/10 blur-xl scale-125" />
-              <img src="/logo.png" alt="CHATistry" className="relative w-24 h-24 object-contain drop-shadow-2xl" />
-            </div>
-          </div>
-
-          <h1 className="text-5xl md:text-6xl font-bold tracking-tight mb-5 leading-[1.1]">
-            Messaging that<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-cyan-300">
-              feels instant.
-            </span>
-          </h1>
-          <p className="text-lg text-[var(--txt2)] max-w-md mx-auto mb-10 leading-relaxed">
-            Real-time chat with voice messages, reactions, media sharing, and end-to-end security. Free, open, yours.
-          </p>
-
-          {/* CTAs */}
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <button onClick={onSignUp}
-              className="px-8 py-3.5 rounded-2xl bg-cyan-500 hover:bg-cyan-400 text-black font-semibold text-base transition-all shadow-[0_0_30px_rgba(6,182,212,0.3)] hover:shadow-[0_0_40px_rgba(6,182,212,0.45)] hover:-translate-y-0.5">
-              Create Free Account →
-            </button>
-            <button onClick={onSignIn}
-              className="px-8 py-3.5 rounded-2xl border border-[var(--border2)] bg-[var(--surface)] hover:bg-[var(--surface3)] text-[var(--txt)] font-semibold text-base transition-all hover:-translate-y-0.5">
-              Sign In
-            </button>
-          </div>
-        </motion.div>
+  const [showAppearance, setShowAppearance] = useState(false);
+  return <div className="liquid-shell min-h-screen overflow-hidden text-[var(--txt)]">
+    <nav className="fixed top-0 inset-x-0 z-50 px-4 pt-4"><div className="glass-panel max-w-6xl mx-auto h-16 rounded-2xl px-5 flex items-center justify-between"><div className="flex items-center gap-2.5"><img src="/logo.png" alt="Chatistry" className="w-9 h-9 object-contain" /><span className="text-lg font-extrabold tracking-[-.06em]">Chatistry</span></div><div className="flex items-center gap-2"><div className="relative"><button onClick={() => setShowAppearance(value => !value)} className="liquid-icon w-9 h-9 rounded-xl grid place-items-center text-[var(--accent)]" aria-label="Change appearance"><SlidersHorizontal className="w-4 h-4" /></button>{showAppearance && <AppearanceMenu />}</div><button onClick={onSignIn} className="px-3.5 py-2 text-sm font-semibold text-[var(--txt2)] hover:text-[var(--txt)] transition-colors">Sign in</button><button onClick={onSignUp} className="liquid-button px-4 py-2 rounded-xl text-sm font-bold">Join Chatistry</button></div></div></nav>
+    <main>
+      <section className="relative max-w-6xl mx-auto px-6 pt-40 pb-24 lg:pt-48 lg:pb-36 grid lg:grid-cols-[1.08fr_.92fr] gap-14 items-center"><div className="absolute w-[32rem] h-[32rem] -top-28 -right-24 caustic-orb opacity-30 pointer-events-none" />
+        <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .7, ease: [0.22,1,.36,1] }} className="relative"><div className="inline-flex items-center gap-2 rounded-full glass-panel px-3.5 py-2 text-[11px] font-bold uppercase tracking-[.13em] text-[var(--txt2)]"><span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] shadow-[0_0_12px_var(--accent)]" /> A more human messenger</div><h1 className="mt-7 max-w-2xl text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-[-.075em] leading-[.98]">A calm place for<br /><span className="text-[var(--accent)]">real conversation.</span></h1><p className="mt-6 max-w-lg text-base sm:text-lg leading-8 text-[var(--txt2)]">Chatistry makes space for the people and messages that matter, with the immediacy of a live chat and the polish of something personal.</p><div className="mt-9 flex flex-wrap gap-3"><button onClick={onSignUp} className="liquid-button rounded-2xl px-6 py-3.5 text-sm font-extrabold flex items-center gap-2">Create your space <ArrowRight className="w-4 h-4" /></button><button onClick={onSignIn} className="glass-panel rounded-2xl px-6 py-3.5 text-sm font-bold hover:bg-[var(--surface3)] transition-colors">I already have an account</button></div><p className="mt-5 text-xs text-[var(--txt3)]">No ads. No clutter. Just your conversations.</p></motion.div>
+        <motion.div initial={{ opacity: 0, scale: .94, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: .85, delay: .1, ease: [0.22,1,.36,1] }} className="relative mx-auto w-full max-w-[440px]"><div className="caustic-orb w-[20rem] h-[20rem] -right-10 -top-12 opacity-60" /><div className="glass-panel-strong relative overflow-hidden rounded-[32px] p-4 shadow-[0_40px_110px_rgba(0,0,0,.28)]"><div className="flex items-center gap-3 border-b border-[var(--border)] px-2 pb-4"><div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[var(--accent)] to-[var(--accent-strong)] p-[1px]"><div className="w-full h-full rounded-[15px] bg-[var(--surface2)] grid place-items-center text-xs font-bold">M</div></div><div><div className="text-sm font-bold">Maya Chen</div><div className="text-[11px] text-[var(--accent)]">online now</div></div><div className="ml-auto flex gap-1.5"><span className="w-2 h-2 bg-white/30 rounded-full" /><span className="w-2 h-2 bg-white/30 rounded-full" /></div></div><div className="space-y-4 px-2 py-6"><div className="max-w-[74%] rounded-2xl rounded-tl-md bg-[var(--bubble-them-bg)] border border-[var(--bubble-them-border)] px-4 py-3 text-sm leading-6">I found the answer to the thing we were discussing.</div><div className="ml-auto max-w-[72%] rounded-2xl rounded-tr-md border border-[var(--bubble-me-border)] bg-[var(--bubble-me-bg)] px-4 py-3 text-sm leading-6">Send it across. I am ready.</div><div className="max-w-[64%] rounded-2xl rounded-tl-md bg-[var(--bubble-them-bg)] border border-[var(--bubble-them-border)] px-4 py-3 text-sm leading-6">It is beautifully simple.</div></div><div className="rounded-2xl border border-[var(--border)] bg-[var(--input-bg)] h-12 px-4 flex items-center"><span className="text-xs text-[var(--txt3)]">Write a message</span><span className="ml-auto w-7 h-7 rounded-full bg-[var(--accent)] grid place-items-center text-[#092027]">↑</span></div></div></motion.div>
       </section>
-
-      {/* Features */}
-      <section className="py-24 px-6">
-        <div className="max-w-5xl mx-auto">
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }} transition={{ duration: 0.5 }}
-            className="text-center mb-14">
-            <h2 className="text-3xl font-bold mb-3">Everything you need</h2>
-            <p className="text-[var(--txt2)]">Built for real conversations, not demo screenshots.</p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {FEATURES.map(({ icon: Icon, title, desc }, i) => (
-              <motion.div key={title}
-                initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }} transition={{ duration: 0.4, delay: i * 0.07 }}
-                className="relative p-6 rounded-2xl border border-[var(--border)] bg-[var(--surface)] hover:border-[var(--border2)] hover:bg-[var(--surface2)] transition-all group">
-                <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mb-4 group-hover:bg-cyan-500/15 transition-colors">
-                  <Icon className="w-5 h-5 text-cyan-400" />
-                </div>
-                <h3 className="font-semibold text-[var(--txt)] mb-1.5">{title}</h3>
-                <p className="text-sm text-[var(--txt2)] leading-relaxed">{desc}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Bottom CTA */}
-      <section className="py-24 px-6">
-        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }} transition={{ duration: 0.5 }}
-          className="max-w-xl mx-auto text-center">
-          <h2 className="text-3xl font-bold mb-4">Ready to chat?</h2>
-          <p className="text-[var(--txt2)] mb-8">Free forever. No ads. No tracking.</p>
-          <button onClick={onSignUp}
-            className="px-10 py-4 rounded-2xl bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-lg transition-all shadow-[0_0_40px_rgba(6,182,212,0.25)] hover:shadow-[0_0_55px_rgba(6,182,212,0.4)] hover:-translate-y-0.5">
-            Start Messaging Free →
-          </button>
-          <p className="text-xs text-[var(--txt3)] mt-4">Already have an account?{' '}
-            <button onClick={onSignIn} className="text-cyan-500 hover:text-cyan-400 transition-colors">Sign in</button>
-          </p>
-        </motion.div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t border-[var(--border)] py-8 px-6">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="" className="w-5 h-5 object-contain opacity-60" />
-            <span className="text-sm text-[var(--txt3)]">CHATistry — free open messaging</span>
-          </div>
-          <span className="text-xs text-[var(--txt3)]">Built with React + Supabase</span>
-        </div>
-      </footer>
-    </div>
-  );
+      <section className="max-w-6xl mx-auto px-6 py-20 border-t border-[var(--border)]"><div className="max-w-xl"><p className="text-xs font-bold uppercase tracking-[.17em] text-[var(--accent)]">Everything in its place</p><h2 className="mt-3 text-3xl sm:text-4xl font-extrabold tracking-[-.05em]">The pieces you use, refined.</h2></div><div className="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">{features.map(({ icon: Icon, title, copy }, index) => <motion.article key={title} initial={{ opacity:0, y:12 }} whileInView={{ opacity:1,y:0 }} viewport={{ once:true }} transition={{ delay:index*.05 }} className="glass-panel rounded-[22px] p-6 hover:-translate-y-1 transition-transform"><div className="w-10 h-10 rounded-2xl bg-[var(--inset)] border border-[var(--border2)] grid place-items-center text-[var(--accent)]"><Icon className="w-4 h-4" /></div><h3 className="mt-5 font-bold tracking-[-.025em]">{title}</h3><p className="mt-2 text-sm leading-6 text-[var(--txt2)]">{copy}</p></motion.article>)}</div></section>
+      <section className="max-w-6xl mx-auto px-6 pb-24"><div className="glass-panel rounded-[32px] p-9 sm:p-12 text-center overflow-hidden relative"><div className="caustic-orb w-60 h-60 -left-20 -bottom-28 opacity-45" /><h2 className="relative text-3xl sm:text-4xl font-extrabold tracking-[-.06em]">Ready when you are.</h2><p className="relative mt-3 text-[var(--txt2)]">Build a more thoughtful group chat in under a minute.</p><button onClick={onSignUp} className="liquid-button relative mt-7 px-6 py-3.5 rounded-2xl text-sm font-extrabold">Get started</button></div></section>
+    </main><footer className="max-w-6xl mx-auto px-6 pb-8 flex justify-between text-xs text-[var(--txt3)]"><span>Chatistry</span><span>Made for conversations</span></footer>
+  </div>;
 }

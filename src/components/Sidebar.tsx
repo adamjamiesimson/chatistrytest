@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User, ConversationSummary, UserRow, ConversationRow } from '../types';
-import { Search, LogOut, Loader2, Camera, Sun, Moon, Star, X, Smile, Users, UserPlus } from 'lucide-react';
+import { Search, LogOut, Loader2, Camera, SlidersHorizontal, Star, X, Smile, Users, UserPlus } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../utils';
 import { supabase } from '../supabase';
@@ -8,6 +8,7 @@ import { Avatar } from './Avatar';
 import { useTheme } from '../context/ThemeContext';
 import { EmojiPicker } from './EmojiPicker';
 import { NewGroupModal } from './NewGroupModal';
+import { AppearanceMenu } from './AppearanceMenu';
 
 interface SidebarProps {
   currentUser: User;
@@ -27,7 +28,7 @@ export function Sidebar({
   onlineUserIds, onAvatarUpdate, unreadCounts,
   isMobile, mobileOpen, onMobileClose,
 }: SidebarProps) {
-  const { theme, toggleTheme } = useTheme();
+  const { theme } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<User[]>([]);
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
@@ -40,6 +41,7 @@ export function Sidebar({
   const [statusText, setStatusText] = useState(currentUser.statusText ?? '');
   const [showStatusEmojiPicker, setShowStatusEmojiPicker] = useState(false);
   const [showNewGroup, setShowNewGroup] = useState(false);
+  const [showAppearance, setShowAppearance] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const saveStatus = async () => {
@@ -190,14 +192,14 @@ export function Sidebar({
 
   const sidebarContent = (
     <div className={cn(
-      'flex flex-col h-full bg-[var(--surface2)]',
-      isMobile ? 'w-full' : 'w-72 border-r border-[var(--border)] shrink-0'
+      'glass-panel flex flex-col h-full bg-[var(--surface2)]',
+      isMobile ? 'w-full rounded-none border-0' : 'w-[19rem] m-3 mr-0 rounded-[26px] shrink-0 overflow-hidden'
     )}>
       {/* Header */}
       <div className="p-5 border-b border-[var(--border)] flex items-center justify-between">
         <div className="flex items-center gap-2">
           <img src="/logo.png" alt="CHATistry logo" className="w-8 h-8 object-contain" />
-          <h1 className="text-xl font-bold tracking-tighter text-cyan-500">CHATistry</h1>
+          <div><h1 className="text-lg font-extrabold tracking-[-0.05em] text-[var(--txt)]">Chatistry</h1><p className="text-[9px] uppercase tracking-[0.18em] text-[var(--txt3)] mt-0.5">Private space</p></div>
         </div>
         <div className="flex items-center gap-1">
           <button onClick={() => setShowNewGroup(true)}
@@ -205,11 +207,12 @@ export function Sidebar({
             title="New group">
             <Users className="w-4 h-4" />
           </button>
-          <button onClick={toggleTheme}
-            className="p-2 text-[var(--txt3)] hover:text-[var(--txt)] transition-colors rounded-lg hover:bg-[var(--surface3)]"
-            title={theme === 'dark' ? 'Light mode' : 'Dark mode'}>
-            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
+          <div className="relative">
+            <button onClick={() => setShowAppearance(v => !v)}
+              className={cn('p-2 transition-colors rounded-xl liquid-icon', showAppearance ? 'text-[var(--accent)] border-[var(--accent)]/40' : 'text-[var(--txt3)] hover:text-[var(--txt)]')}
+              title={`Appearance: ${theme} mode`}><SlidersHorizontal className="w-4 h-4" /></button>
+            {showAppearance && <AppearanceMenu />}
+          </div>
           <button onClick={onLogout}
             className="p-2 text-[var(--txt3)] hover:text-[var(--txt)] transition-colors rounded-lg hover:bg-[var(--surface3)]"
             title="Sign out">
@@ -227,13 +230,13 @@ export function Sidebar({
       </div>
 
       {/* Search */}
-      <div className="p-4">
+      <div className="p-4 pb-3">
         <div className="relative group">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--txt3)] group-focus-within:text-cyan-600 transition-colors" />
           <input
             type="text" placeholder="Search chats or people..." value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="w-full bg-[var(--surface4)] border border-[var(--border3)] rounded-md py-2 pl-9 pr-4 text-sm focus:outline-none focus:border-cyan-600 transition-colors placeholder-[var(--txt3)] text-[var(--txt)]"
+            className="w-full bg-[var(--input-bg)] border border-[var(--border)] rounded-2xl py-2.5 pl-9 pr-4 text-sm focus:outline-none focus:border-cyan-600 transition-colors placeholder-[var(--txt3)] text-[var(--txt)]"
           />
         </div>
       </div>
@@ -267,9 +270,9 @@ export function Sidebar({
                   onMouseEnter={() => setHoveredConvoId(c.id)}
                   onMouseLeave={() => setHoveredConvoId(null)}
                   className={cn(
-                    'w-full flex items-center gap-3 p-3 text-left rounded-lg transition-colors',
+                    'w-full flex items-center gap-3 p-3 text-left rounded-2xl transition-colors border border-transparent',
                     isActive
-                      ? 'bg-[var(--surface4)] border-l-2 border-cyan-500'
+                      ? 'bg-[var(--surface4)] border-[var(--border2)] shadow-[inset_0_1px_rgba(255,255,255,.08)]'
                       : 'hover:bg-[var(--surface3)] text-[var(--txt2)] hover:text-[var(--txt)]'
                   )}
                 >
