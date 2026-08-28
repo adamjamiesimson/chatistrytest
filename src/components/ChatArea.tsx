@@ -3,7 +3,7 @@ import { User, Message, ReactionsMap, PinnedMessage, ConversationSummary, UserRo
 import {
   Send, MessageSquareDashed, Paperclip, X,
   Pencil, Trash2, Check, CheckCheck, ChevronDown, Play, CornerUpLeft, Smile,
-  Search, SearchX, Mic, Pin, PinOff, ArrowLeft, Forward, Info, Plus, Sparkles,
+  Search, SearchX, Mic, Pin, PinOff, ArrowLeft, Forward, Info, Plus, Sparkles, Palette,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../utils';
@@ -15,6 +15,7 @@ import { LinkPreview } from './LinkPreview';
 import { ForwardModal } from './ForwardModal';
 import { GroupInfoModal } from './GroupInfoModal';
 import { WingmanPanel } from './WingmanPanel';
+import { CHAT_THEMES, ChatThemeId, ChatThemePicker } from './ChatThemePicker';
 
 const PAGE_SIZE = 200;
 
@@ -291,11 +292,45 @@ export function ChatArea({ currentUser, conversation, onlineUserIds, onBackToSid
   const [groupMembers, setGroupMembers] = useState<User[]>([]);
   const [showGroupInfo, setShowGroupInfo] = useState(false);
   const [showWingman, setShowWingman] = useState(false);
+  const [showChatThemes, setShowChatThemes] = useState(false);
+  const [chatThemeId, setChatThemeId] = useState<ChatThemeId>('aurora');
   const [typingUserIds, setTypingUserIds] = useState<Set<string>>(new Set());
   const typingTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   const partner = conversation?.partner;
   const chatId = conversation?.id ?? null;
+  const currentChatTheme = CHAT_THEMES.find(theme => theme.id === chatThemeId) ?? CHAT_THEMES[0];
+
+  useEffect(() => {
+    if (!chatId) return;
+    const storageKey = `chatistry-chat-theme:${currentUser.id}:${chatId}`;
+    const localTheme = localStorage.getItem(storageKey) as ChatThemeId | null;
+    if (localTheme && CHAT_THEMES.some(theme => theme.id === localTheme)) setChatThemeId(localTheme);
+    else setChatThemeId('aurora');
+
+    let cancelled = false;
+    supabase.from('user_conversation_themes').select('theme_id')
+      .eq('user_id', currentUser.id).eq('conversation_id', chatId).maybeSingle()
+      .then(({ data }) => {
+        const savedTheme = data?.theme_id as ChatThemeId | undefined;
+        if (!cancelled && savedTheme && CHAT_THEMES.some(theme => theme.id === savedTheme)) {
+          setChatThemeId(savedTheme);
+          localStorage.setItem(storageKey, savedTheme);
+        }
+      });
+    return () => { cancelled = true; };
+  }, [chatId, currentUser.id]);
+
+  const applyChatTheme = (themeId: ChatThemeId) => {
+    if (!chatId) return;
+    setChatThemeId(themeId);
+    localStorage.setItem(`chatistry-chat-theme:${currentUser.id}:${chatId}`, themeId);
+    supabase.from('user_conversation_themes').upsert({
+      user_id: currentUser.id, conversation_id: chatId, theme_id: themeId, updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id,conversation_id' }).then(({ error }) => {
+      if (error) console.warn('Could not save chat theme:', error.message);
+    });
+  };
 
   // Fetch full member profiles whenever group membership changes
   useEffect(() => {
@@ -796,7 +831,7 @@ export function ChatArea({ currentUser, conversation, onlineUserIds, onBackToSid
   const firstTyper = firstTyperId ? memberMap.get(firstTyperId) : undefined;
 
   return (
-    <div className="chat-pane glass-panel relative flex-1 flex flex-col bg-[var(--surface2)] max-h-full m-0 rounded-[32px] overflow-hidden text-[var(--txt)] min-w-0 overflow-x-hidden">
+    <div className="chat-pane glass-panel relative flex-1 flex flex-col bg-[var(--surface2)] max-h-full m-0 rounded-[32px] overflow-hidden text-[var(--txt)] min-w-0 overflow-x-hidden" style={currentChatTheme.variables}>
 
       {/* Header */}
       <div className="h-20 border-b border-[var(--border)] bg-[var(--surface)] px-7 flex items-center gap-4 shrink-0 backdrop-blur-xl">
@@ -848,6 +883,11 @@ export function ChatArea({ currentUser, conversation, onlineUserIds, onBackToSid
             <Info className="w-4 h-4" />
           </button>
         )}
+        <button onClick={() => setShowChatThemes(true)}
+          className="w-9 h-9 rounded-xl border border-[var(--border)] bg-[var(--surface3)] flex items-center justify-center text-[var(--txt3)] hover:text-[var(--accent)] hover:border-[var(--border3)] transition-colors flex-shrink-0"
+          title="Choose chat theme">
+          <Palette className="w-4 h-4" />
+        </button>
         <button onClick={() => setShowWingman(o => !o)}
           className={cn('h-8 rounded-lg border px-2.5 flex items-center gap-1.5 transition-colors flex-shrink-0',
             showWingman ? 'border-violet-500/70 bg-violet-600/20 text-violet-300' : 'border-[var(--border)] text-[var(--txt3)] hover:border-violet-500/60 hover:text-violet-300')}
@@ -869,6 +909,7 @@ export function ChatArea({ currentUser, conversation, onlineUserIds, onBackToSid
           <WingmanPanel conversationId={chatId} onClose={() => setShowWingman(false)} />
         )}
       </AnimatePresence>
+      {showChatThemes && <ChatThemePicker activeThemeId={chatThemeId} onSelect={applyChatTheme} onClose={() => setShowChatThemes(false)} />}
 
       {/* Search bar */}
       <AnimatePresence>

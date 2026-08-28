@@ -268,6 +268,48 @@ CREATE POLICY "Users can update own preferences"
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
+-- ================================================================
+-- MIGRATION: private per-user, per-conversation chat themes
+-- This does not change the theme another participant sees.
+-- ================================================================
+
+CREATE TABLE IF NOT EXISTS public.user_conversation_themes (
+  user_id uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  conversation_id text NOT NULL REFERENCES public.conversations(id) ON DELETE CASCADE,
+  theme_id text NOT NULL DEFAULT 'aurora' CHECK (theme_id IN (
+    'aurora', 'lagoon', 'iris', 'rosewater', 'apricot',
+    'moss', 'ember', 'midnight', 'porcelain', 'stone',
+    'amethyst', 'blue-hour', 'citrine', 'blush', 'forest',
+    'sapphire', 'cocoa', 'coral', 'ice', 'obsidian'
+  )),
+  updated_at timestamptz NOT NULL DEFAULT timezone('utc', now()),
+  PRIMARY KEY (user_id, conversation_id)
+);
+
+ALTER TABLE public.user_conversation_themes ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own conversation themes" ON public.user_conversation_themes;
+CREATE POLICY "Users can view own conversation themes"
+  ON public.user_conversation_themes FOR SELECT
+  USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can create own conversation themes" ON public.user_conversation_themes;
+CREATE POLICY "Users can create own conversation themes"
+  ON public.user_conversation_themes FOR INSERT
+  WITH CHECK (
+    auth.uid() = user_id
+    AND EXISTS (
+      SELECT 1 FROM public.conversations c
+      WHERE c.id = conversation_id AND auth.uid() = ANY(c.participants)
+    )
+  );
+
+DROP POLICY IF EXISTS "Users can update own conversation themes" ON public.user_conversation_themes;
+CREATE POLICY "Users can update own conversation themes"
+  ON public.user_conversation_themes FOR UPDATE
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
 -- Rate limiting: max 30 messages per user per minute
 CREATE OR REPLACE FUNCTION enforce_rate_limit()
 RETURNS TRIGGER AS $$
